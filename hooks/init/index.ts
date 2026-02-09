@@ -28,9 +28,9 @@ export default function useInitApp() {
 
     // Initialize other services
     APIService.initializeDefaultClient(EnvService.API_URL);
-    await PushNotificationService.init();
+    // await PushNotificationService.init();
 
-    await GetPusher();
+    // await GetPusher();
 
     setIsVerifyingAuth(true);
 

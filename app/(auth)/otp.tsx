@@ -10,13 +10,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { theme } from "@/ui/theme";
-import { useResend, useVerify } from "@/features/auth/hooks";
+import { useResend, useVerify } from "@/modules/auth/hooks";
 import { SecureStorage } from "@/libs/secure-storage";
 import { SecureStorageKey } from "@/libs/secure-storage/keys";
 import { useAuthStore } from "@/store/auth";
-import { Logo } from "@/modules/shared/components/components/Logo";
+import { Logo } from "@/modules/shared/components/Logo";
 import { OTPInput } from "@/modules/auth/components/OTPInput";
-import { Button } from "@/modules/shared/components/components/inputs/Button";
+import { Button } from "@/modules/shared/components/Button";
 import { Toaster } from "@/libs/notification/toast";
 
 export default function OTPScreen() {

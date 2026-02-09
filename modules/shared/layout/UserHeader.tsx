@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons, Entypo } from "@expo/vector-icons";
-import { StaticAvatar } from "@/modules/shared/components/components/StaticAvatar";
+import { StaticAvatar } from "@/modules/shared/components/StaticAvatar";
 import { useAuthStore } from "@/store/auth";
 import { theme, typography } from "@/ui/theme";
 

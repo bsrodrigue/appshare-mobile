@@ -2,12 +2,12 @@ import { ExpoConfig, ConfigContext } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "Elite-app",
-  slug: "Elite-app",
+  name: "AppShare",
+  slug: "appshare",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: "eliteapp",
+  scheme: "appshare",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
   ios: {
@@ -16,9 +16,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     entitlements: {
       "aps-environment": "development",
-      "com.apple.security.application-groups": ["group.com.eliteapp.onesignal"],
+      "com.apple.security.application-groups": ["group.com.appshare.onesignal"],
     },
-    bundleIdentifier: "com.eliteapp",
+    bundleIdentifier: "com.appshare",
     supportsTablet: true,
     config: {
       googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY_IOS,
@@ -37,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     edgeToEdgeEnabled: true,
-    package: "com.eliteapp",
+    package: "com.appshare",
   },
   web: {
     output: "static",

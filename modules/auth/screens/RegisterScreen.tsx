@@ -5,22 +5,22 @@ import { useRouter } from "expo-router";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Input } from "@/modules/shared/components/components/inputs/Input";
+import { Input } from "@/modules/shared/components/Input";
 import { PasswordInput } from "@/modules/auth/components/PasswordInput";
-import { FileUploadButton } from "@/modules/shared/components/components/inputs/FileUploadButton";
-import { Checkbox } from "@/modules/shared/components/components/inputs/Checkbox";
-import { PhoneInput } from "@/modules/shared/components/components/inputs/PhoneInput";
-import { RolePicker } from "@/modules/shared/components/components/inputs/RolePicker";
-import { VehicleTypePicker } from "@/modules/shared/components/components/inputs/VehicleTypePicker";
-import { DatePicker } from "@/modules/shared/components/components/inputs/DatePicker";
+import { FileUploadButton } from "@/modules/shared/components/FileUploadButton";
+import { Checkbox } from "@/modules/shared/components/Checkbox";
+import { PhoneInput } from "@/modules/shared/components/PhoneInput";
+import { RolePicker } from "@/modules/shared/components/RolePicker";
+import { VehicleTypePicker } from "@/modules/shared/components/VehicleTypePicker";
+import { DatePicker } from "@/modules/shared/components/DatePicker";
 import { useFilePicker } from "@/hooks/useFileUpload";
 import { COUNTRY_CODE } from "@/constants/auth";
 import { theme } from "@/ui/theme";
-import { useRegister } from "@/features/auth/hooks";
+import { useRegister } from "@/modules/auth/hooks";
 import { AllowedRegistrationRolesSchema } from "@/types/role";
 import { Toaster } from "@/libs/notification/toast";
 import { prepareFileForUpload } from "@/utils/files";
-import { Button } from "../../shared/components/components/inputs/Button";
+import { Button } from "@/modules/shared/components/Button";
 
 const registerSchema = z
   .object({

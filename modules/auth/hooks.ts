@@ -13,7 +13,7 @@ import {
   me,
   resendOTP,
   verifyPhone,
-} from "@/features/auth/api";
+} from "@/modules/auth/api";
 import { useCall } from "@/hooks/api";
 
 // Login
