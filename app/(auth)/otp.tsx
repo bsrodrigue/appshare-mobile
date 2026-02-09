@@ -14,15 +14,15 @@ import { useResend, useVerify } from "@/features/auth/hooks";
 import { SecureStorage } from "@/libs/secure-storage";
 import { SecureStorageKey } from "@/libs/secure-storage/keys";
 import { useAuthStore } from "@/store/auth";
-import { Logo } from "@/ui/use-cases/shared/components/Logo";
-import { OTPInput } from "@/ui/use-cases/auth/components/inputs/OTPInput";
-import { Button } from "@/ui/use-cases/shared/components/inputs/Button";
+import { Logo } from "@/modules/shared/components/components/Logo";
+import { OTPInput } from "@/modules/auth/components/OTPInput";
+import { Button } from "@/modules/shared/components/components/inputs/Button";
 import { Toaster } from "@/libs/notification/toast";
 
 export default function OTPScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
-    null
+    null,
   );
   const { setUser } = useAuthStore();
   const [otp, setOtp] = useState("");
@@ -45,7 +45,7 @@ export default function OTPScreen() {
 
       Toaster.success(
         "Code renvoyé",
-        `Tentatives restantes: ${response.data.attempts_remaining}`
+        `Tentatives restantes: ${response.data.attempts_remaining}`,
       );
     },
     onError(error) {

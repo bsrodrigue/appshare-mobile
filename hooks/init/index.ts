@@ -1,4 +1,4 @@
-import { useMe } from "@/features/auth/hooks";
+import { useMe } from "@/modules/auth/hooks";
 import { useAuthStore } from "@/store/auth";
 import { useCallback, useEffect } from "react";
 import { Logger } from "@/libs/log";

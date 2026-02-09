@@ -1,22 +1,22 @@
 const palette = {
   // Base colors
-  darkBlue: '#10131f',
-  lightBlue: '#00bfff',
-  orange: '#ff6b4a',
-  red: '#FF3B30',
-  white: '#ffffff',
-  black: '#000000',
+  darkBlue: "#10131f",
+  lightBlue: "#00bfff",
+  orange: "#ff6b4a",
+  red: "#FF3B30",
+  white: "#ffffff",
+  black: "#000000",
 
   // Grays
-  gray100: '#f5f5f5',
-  gray200: '#d3d3d3',
-  gray300: '#ccc',
-  gray400: '#999',
-  gray500: '#666',
-  gray800: '#333',
+  gray100: "#f5f5f5",
+  gray200: "#d3d3d3",
+  gray300: "#ccc",
+  gray400: "#999",
+  gray500: "#666",
+  gray800: "#333",
 
   // Specific UI colors
-  splashBlue: '#4FA4F4',
+  splashBlue: "#4FA4F4",
 };
 
 export const theme = {
@@ -24,9 +24,9 @@ export const theme = {
     // Backgrounds
     background: palette.darkBlue,
     whiteBackground: palette.white,
-    surface: 'rgba(255,255,255,0.08)',
+    surface: "rgba(255,255,255,0.08)",
     inputBackground: palette.gray200,
-    cardBackground: 'rgba(255,255,255,0.05)',
+    cardBackground: "rgba(255,255,255,0.05)",
 
     // Text
     text: palette.gray800,
@@ -44,8 +44,8 @@ export const theme = {
     disabled: palette.gray500,
 
     // UI Elements
-    border: 'rgba(255,255,255,0.1)',
-    otpBox: '#E0E0E0',
+    border: "rgba(255,255,255,0.1)",
+    otpBox: "#E0E0E0",
     otpBoxActive: palette.white,
   },
   spacing: {
@@ -73,16 +73,16 @@ export const theme = {
     xxl: 48,
   },
   fontWeight: {
-    normal: '400' as const,
-    medium: '600' as const,
-    bold: '700' as const,
+    normal: "400" as const,
+    medium: "600" as const,
+    bold: "700" as const,
   },
   // Font Families - centralized here for easy swapping
   fontFamily: {
-    regular: 'System', // Swap with 'Inter-Regular' or similar
-    medium: 'System',  // Swap with 'Inter-Medium'
-    bold: 'System',    // Swap with 'Inter-Bold'
-    heading: 'System', // Swap with 'Outfit-Bold' or similar
+    regular: "System", // Swap with 'Inter-Regular' or similar
+    medium: "System", // Swap with 'Inter-Medium'
+    bold: "System", // Swap with 'Inter-Bold'
+    heading: "System", // Swap with 'Outfit-Bold' or similar
   },
 };
 

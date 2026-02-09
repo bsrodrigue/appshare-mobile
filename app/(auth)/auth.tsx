@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { theme } from '@/ui/theme';
-import LoginScreen from '@/ui/use-cases/auth/screens/LoginScreen';
-import RegisterScreen from '@/ui/use-cases/auth/screens/RegisterScreen';
-import EliteLogo from '@/ui/use-cases/shared/components/EliteLogo';
+import { theme } from "@/ui/theme";
+import LoginScreen from "@/modules/auth/screens/LoginScreen";
+import RegisterScreen from "@/modules/auth/screens/RegisterScreen";
+import EliteLogo from "@/modules/shared/components/components/EliteLogo";
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,11 +20,11 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -34,14 +34,9 @@ export default function AuthScreen() {
         >
           <EliteLogo />
 
-          {isLogin && (
-            <LoginScreen onToggleMode={toggleAuthMode} />
-          )}
+          {isLogin && <LoginScreen onToggleMode={toggleAuthMode} />}
 
-          {!isLogin && (
-            <RegisterScreen onToggleMode={toggleAuthMode} />
-          )}
-
+          {!isLogin && <RegisterScreen onToggleMode={toggleAuthMode} />}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -63,4 +58,3 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl,
   },
 });
-
