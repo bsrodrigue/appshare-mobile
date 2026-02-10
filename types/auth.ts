@@ -1,4 +1,31 @@
-import { UserRole } from "./role";
+import { z } from "zod";
+
+// ============================================================================
+// User Resource
+// ============================================================================
+
+/**
+ * User resource as returned by the AppShare API.
+ * Note: id is now a UUID string (previously was number).
+ */
+export const UserResourceSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  username: z.string(),
+  phone_number: z.string(),
+  first_name: z.string(),
+  last_name: z.string(),
+  is_active: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  last_login_at: z.string().optional(),
+});
+
+export type UserResource = z.infer<typeof UserResourceSchema>;
+
+// ============================================================================
+// Form Types (for UI components)
+// ============================================================================
 
 export interface FormData {
   name: string;
@@ -22,17 +49,4 @@ export interface FormErrors {
   role?: string;
 }
 
-export type AuthMode = 'login' | 'register';
-
-export type UserResource = {
-  id: number;
-  email: string;
-  phone: string;
-  role: UserRole;
-  first_name: string;
-  last_name: string;
-  date_of_birth: string;
-  is_active: boolean;
-  phone_verified_at: string;
-  created_at: string;
-}
+export type AuthMode = "login" | "register";
