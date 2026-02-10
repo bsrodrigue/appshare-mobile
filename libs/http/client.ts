@@ -9,6 +9,8 @@ import { Logger } from "../log";
 import { JSONService } from "../json";
 import { TokenService, TokenPair } from "../token";
 
+const logger = new Logger("HTTPClient");
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -56,8 +58,7 @@ export class HTTPClient {
   constructor(baseURL: string, config?: HTTPClientConfig) {
     const logStr = `HTTPClient Constructor: \n\tBASE_URL: ${baseURL}`;
 
-    Logger.setModuleName("HTTPClient");
-    Logger.debug(logStr);
+    logger.debug(logStr);
 
     this.onTokenRefresh = config?.onTokenRefresh;
     this.onRefreshFailure = config?.onRefreshFailure;
@@ -97,10 +98,8 @@ export class HTTPClient {
     // ========================================
     this.instance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        Logger.setModuleName("HTTPClient");
-
         const reqString = `${config.method?.toUpperCase()} ${config.url} ${JSONService.stringify(config.data) ?? ""}`;
-        Logger.debug(`Request: ${reqString}`);
+        logger.debug(`Request: ${reqString}`);
 
         try {
           // Check if we need to refresh the token before making the request
@@ -115,14 +114,14 @@ export class HTTPClient {
             config.headers.Authorization = `Bearer ${token}`;
           }
         } catch (error) {
-          Logger.error(`Failed to load/refresh token: ${error}`);
+          logger.error(`Failed to load/refresh token: ${error}`);
         }
 
         return config;
       },
 
       (error: AxiosError) => {
-        Logger.error(`Request Error: ${JSON.stringify(error)}`);
+        logger.error(`Request Error: ${JSON.stringify(error)}`);
         return Promise.reject(error);
       },
     );
@@ -132,8 +131,7 @@ export class HTTPClient {
     // ========================================
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        Logger.setModuleName("HTTPClient");
-        Logger.debug(`Response: ${JSONService.stringify(response.data)}`);
+        logger.debug(`Response: ${JSONService.stringify(response.data)}`);
         return response;
       },
 
@@ -157,7 +155,7 @@ export class HTTPClient {
               return this.instance(originalRequest);
             }
           } catch (refreshError) {
-            Logger.error(`Token refresh failed: ${refreshError}`);
+            logger.error(`Token refresh failed: ${refreshError}`);
             // Refresh failed, trigger logout
             if (this.onRefreshFailure) {
               this.onRefreshFailure();
@@ -175,11 +173,11 @@ export class HTTPClient {
                         Message: ${apiError.message ?? apiError.detail}
                         Errors: ${JSON.stringify(apiError.errors ?? [])}
                     `;
-          Logger.error(errorString);
+          logger.error(errorString);
         } else if (error.request) {
-          Logger.error(`Request Error (No Response): ${JSON.stringify(error)}`);
+          logger.error(`Request Error (No Response): ${JSON.stringify(error)}`);
         } else {
-          Logger.error(`Request Error: ${JSON.stringify(error)}`);
+          logger.error(`Request Error: ${JSON.stringify(error)}`);
         }
 
         return Promise.reject(error);
@@ -205,13 +203,13 @@ export class HTTPClient {
     // Check if refresh token is available and not expired
     const refreshToken = await TokenService.getRefreshToken();
     if (!refreshToken) {
-      Logger.debug("No refresh token available");
+      logger.debug("No refresh token available");
       return false;
     }
 
     const isRefreshExpired = await TokenService.isRefreshTokenExpired();
     if (isRefreshExpired) {
-      Logger.debug("Refresh token is expired");
+      logger.debug("Refresh token is expired");
       if (this.onRefreshFailure) {
         this.onRefreshFailure();
       }
@@ -219,7 +217,7 @@ export class HTTPClient {
     }
 
     if (!this.onTokenRefresh) {
-      Logger.debug("No token refresh handler configured");
+      logger.debug("No token refresh handler configured");
       return false;
     }
 
@@ -228,19 +226,19 @@ export class HTTPClient {
 
     const refreshPromise = (async (): Promise<TokenPair | null> => {
       try {
-        Logger.debug("Attempting token refresh...");
+        logger.debug("Attempting token refresh...");
         const newTokens = await this.onTokenRefresh!(refreshToken);
 
         if (newTokens) {
           await TokenService.storeTokens(newTokens);
-          Logger.debug("Token refresh successful");
+          logger.debug("Token refresh successful");
           return newTokens;
         }
 
-        Logger.debug("Token refresh returned null");
+        logger.debug("Token refresh returned null");
         return null;
       } catch (error) {
-        Logger.error(`Token refresh error: ${error}`);
+        logger.error(`Token refresh error: ${error}`);
         return null;
       } finally {
         TokenService.setIsRefreshing(false);

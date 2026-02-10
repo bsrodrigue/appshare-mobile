@@ -6,6 +6,8 @@ import { JSONService } from "@/libs/json";
 import EnvService from "@/libs/env";
 import { APIService } from "@/libs/api/client";
 
+const logger = new Logger("ApplicationStartup");
+
 export default function useInitApp() {
   const {
     isAuthenticated,
@@ -17,15 +19,14 @@ export default function useInitApp() {
   const { callMe, isLoading: isCallMeLoading } = useMe({});
 
   const initApplication = useCallback(async () => {
-    Logger.setModuleName("ApplicationStartup");
-    Logger.debug("Initializing application");
+    logger.debug("Initializing application");
 
     // Initialize and validate environment variables first
     try {
       EnvService.init();
-      Logger.debug("✅ Environment variables validated successfully");
+      logger.debug("✅ Environment variables validated successfully");
     } catch (error) {
-      Logger.error(`Failed to initialize environment variables: ${error}`);
+      logger.error(`Failed to initialize environment variables: ${error}`);
       throw error; // Fail fast if env vars are missing
     }
 
@@ -34,7 +35,7 @@ export default function useInitApp() {
 
     // Set up logout handler for token refresh failures
     APIService.setLogoutHandler(() => {
-      Logger.debug("Token refresh failed, logging out user");
+      logger.debug("Token refresh failed, logging out user");
       logout();
     });
 
@@ -47,7 +48,7 @@ export default function useInitApp() {
     const response = await callMe();
 
     if (response === null) {
-      Logger.debug("User not authenticated");
+      logger.debug("User not authenticated");
       setIsVerifyingAuth(false);
       return;
     }
@@ -57,7 +58,7 @@ export default function useInitApp() {
 
     setUser(user);
     setIsVerifyingAuth(false);
-    Logger.debug(`User authenticated: ${JSONService.stringify(user)}`);
+    logger.debug(`User authenticated: ${JSONService.stringify(user)}`);
   }, [callMe, setIsVerifyingAuth, setUser, logout]);
 
   const isLoading = isCallMeLoading || isVerifyingAuth;

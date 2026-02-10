@@ -2,6 +2,8 @@ import { HTTPClient } from "@/libs/http/client";
 import { TokenPair, TokenService } from "@/libs/token";
 import { Logger } from "../log";
 
+const logger = new Logger("APIService");
+
 /**
  * Singleton API Service that manages the HTTP client.
  * Handles initialization and provides access to the configured client.
@@ -17,9 +19,7 @@ export class APIService {
    */
   public static initializeDefaultClient(baseURL: string): void {
     if (APIService.isInitialized) {
-      Logger.debug(
-        "APIService has already been initialized. Skipping re-initialization.",
-      );
+      logger.debug("Already initialized. Skipping re-initialization.");
       return;
     }
 
@@ -32,14 +32,14 @@ export class APIService {
 
     // Set up refresh failure handler (triggers logout)
     APIService.defaultClient.setRefreshFailureHandler(() => {
-      Logger.debug("APIService: Token refresh failed, triggering logout");
+      logger.debug("Token refresh failed, triggering logout");
       if (APIService.logoutHandler) {
         APIService.logoutHandler();
       }
     });
 
     APIService.isInitialized = true;
-    Logger.debug(`APIService initialized with baseURL: ${baseURL}`);
+    logger.debug(`Initialized with baseURL: ${baseURL}`);
   }
 
   /**
@@ -71,7 +71,7 @@ export class APIService {
     refreshToken: string,
   ): Promise<TokenPair | null> {
     try {
-      Logger.debug("APIService: Refreshing token...");
+      logger.debug("Refreshing token...");
 
       // Import dynamically to avoid circular dependency
       const { refreshToken: refreshTokenFn } =
@@ -89,10 +89,10 @@ export class APIService {
       // Store the new tokens
       await TokenService.storeTokens(newTokens);
 
-      Logger.debug("APIService: Token refresh successful");
+      logger.debug("Token refresh successful");
       return newTokens;
     } catch (error) {
-      Logger.error(`APIService: Token refresh failed - ${error}`);
+      logger.error(`Token refresh failed - ${error}`);
       return null;
     }
   }

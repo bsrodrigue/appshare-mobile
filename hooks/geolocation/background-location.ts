@@ -3,25 +3,20 @@ import { Logger } from "@/libs/log";
 import { useFocusEffect } from "expo-router";
 import React from "react";
 
+const logger = new Logger("useBackgroundLocation");
+
 export default function useBackgroundLocation() {
   const startBackgroundTracking = async () => {
     try {
       const success = await BackgroundLocationService.startTracking();
 
       if (success) {
-        Logger.debug(
-          "useBackgroundLocation: Background tracking started successfully"
-        );
+        logger.debug("Background tracking started successfully");
       } else {
-        Logger.error(
-          "useBackgroundLocation: Failed to start background tracking"
-        );
+        logger.error("Failed to start background tracking");
       }
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "useBackgroundLocation: Error starting background tracking"
-      );
+      logger.exception(error as Error, "Error starting background tracking");
     }
   };
 
@@ -30,11 +25,9 @@ export default function useBackgroundLocation() {
       startBackgroundTracking();
 
       return () => {
-        Logger.debug(
-          "useBackgroundLocation: Stopping background location tracking"
-        );
+        logger.debug("Stopping background location tracking");
         BackgroundLocationService.stopTracking();
       };
-    }, [])
+    }, []),
   );
 }

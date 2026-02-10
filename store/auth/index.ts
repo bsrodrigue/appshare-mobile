@@ -3,6 +3,8 @@ import { UserResource } from "@/types/auth";
 import { TokenService } from "@/libs/token";
 import { Logger } from "@/libs/log";
 
+const logger = new Logger("AuthStore");
+
 interface AuthState {
   user: UserResource | null;
   isAuthenticated: boolean;
@@ -28,11 +30,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
     try {
       // Clear all tokens
       await TokenService.clearTokens();
-      Logger.debug("AuthStore: Logged out, tokens cleared");
+      logger.debug("Logged out, tokens cleared");
     } catch (error) {
-      Logger.error(
-        `AuthStore: Failed to clear tokens during logout - ${error}`,
-      );
+      logger.error(`Failed to clear tokens during logout - ${error}`);
     }
     set({ user: null, isAuthenticated: false });
   },

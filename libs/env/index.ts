@@ -2,6 +2,8 @@ import Constants from "expo-constants";
 import * as z from "zod";
 import { Logger } from "../log";
 
+const logger = new Logger("EnvService");
+
 /**
  * Environment variable schema definition
  * Add all required environment variables here
@@ -52,9 +54,8 @@ export default class EnvService {
       // Read from Constants.expoConfig.extra (baked in at build time from app.config.ts)
       const extra = Constants.expoConfig?.extra ?? {};
 
-      Logger.setModuleName("EnvService");
       for (const [key, value] of Object.entries(extra)) {
-        Logger.debug(`${key}: ${value}`);
+        logger.debug(`${key}: ${value}`);
       }
 
       this.env = envSchema.parse(extra);

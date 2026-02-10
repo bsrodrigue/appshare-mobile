@@ -3,6 +3,8 @@ import { useRealtime } from "../realtime";
 import { Logger } from "@/libs/log";
 import { Coords } from "@/types/geolocation";
 
+const logger = new Logger("useTrackCourse");
+
 type DeliverymanLocationUpdate = {
   course_id: number;
   location: {
@@ -20,7 +22,7 @@ interface TrackCourseProps {
 
 export default function useTrackCourse({ courseId }: TrackCourseProps) {
   const [deliverymanCoords, setDeliverymanCoords] = useState<Coords | null>(
-    null
+    null,
   );
   const { subscribe, unsubscribe, unbind } = useRealtime();
 
@@ -29,15 +31,14 @@ export default function useTrackCourse({ courseId }: TrackCourseProps) {
 
   const handleLocationUpdate = useCallback(
     (data: DeliverymanLocationUpdate) => {
-      Logger.setModuleName("useTrackCourse");
-      Logger.debug("Deliveryman location updated", data);
+      logger.debug("Deliveryman location updated", data);
 
       setDeliverymanCoords({
         latitude: data.location.lat,
         longitude: data.location.lng,
       });
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -47,9 +48,9 @@ export default function useTrackCourse({ courseId }: TrackCourseProps) {
       try {
         const channel = await subscribe(channelName);
         channel.bind(eventName, handleLocationUpdate);
-        Logger.debug(`OrderMapRoute: Subscribed to ${channelName}`);
+        logger.debug(`OrderMapRoute: Subscribed to ${channelName}`);
       } catch (error) {
-        Logger.error("OrderMapRoute: Failed to setup realtime", error);
+        logger.error("OrderMapRoute: Failed to setup realtime", error);
       }
     };
 

@@ -2,6 +2,8 @@ import { SecureStorage } from "../secure-storage";
 import { SecureStorageKey } from "../secure-storage/keys";
 import { Logger } from "../log";
 
+const logger = new Logger("TokenService");
+
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
@@ -40,9 +42,9 @@ export class TokenService {
           tokens.refreshTokenExpiresAt,
         ),
       ]);
-      Logger.debug("TokenService: Tokens stored successfully");
+      logger.debug("Tokens stored successfully");
     } catch (error) {
-      Logger.error(`TokenService: Failed to store tokens - ${error}`);
+      logger.error(`Failed to store tokens - ${error}`);
       throw error;
     }
   }
@@ -89,7 +91,7 @@ export class TokenService {
         refreshTokenExpiresAt: refreshTokenExpiresAt || "",
       };
     } catch (error) {
-      Logger.error(`TokenService: Failed to retrieve tokens - ${error}`);
+      logger.error(`Failed to retrieve tokens - ${error}`);
       return null;
     }
   }
@@ -107,9 +109,9 @@ export class TokenService {
         // Also clear legacy token
         SecureStorage.removeItem(SecureStorageKey.BEARER_TOKEN),
       ]);
-      Logger.debug("TokenService: Tokens cleared successfully");
+      logger.debug("Tokens cleared successfully");
     } catch (error) {
-      Logger.error(`TokenService: Failed to clear tokens - ${error}`);
+      logger.error(`Failed to clear tokens - ${error}`);
       throw error;
     }
   }
@@ -131,7 +133,7 @@ export class TokenService {
 
       return now.getTime() >= expirationDate.getTime() - bufferMs;
     } catch (error) {
-      Logger.error(`TokenService: Failed to check token expiration - ${error}`);
+      logger.error(`Failed to check token expiration - ${error}`);
       return true; // Assume expired on error
     }
   }
@@ -151,9 +153,7 @@ export class TokenService {
 
       return now.getTime() >= expirationDate.getTime();
     } catch (error) {
-      Logger.error(
-        `TokenService: Failed to check refresh token expiration - ${error}`,
-      );
+      logger.error(`Failed to check refresh token expiration - ${error}`);
       return true;
     }
   }

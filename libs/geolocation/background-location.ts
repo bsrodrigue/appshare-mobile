@@ -3,8 +3,10 @@ import * as TaskManager from "expo-task-manager";
 import * as IntentLauncher from "expo-intent-launcher";
 import { Alert, Linking, Platform } from "react-native";
 import { Logger } from "../log";
-import { updateLocation } from "@/features/delivery-man/api";
+// import { updateLocation } from "@/features/delivery-man/api";
 import { theme } from "@/ui/theme";
+
+const logger = new Logger("BackgroundLocation");
 
 /**
  * Background Location Tracking Service
@@ -22,8 +24,8 @@ const DISTANCE_INTERVAL = 5; // 5 meters
  */
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
   if (error) {
-    Logger.error(
-      `BackgroundLocation: Task error - ${error.message || String(error)}`
+    logger.error(
+      `BackgroundLocation: Task error - ${error.message || String(error)}`,
     );
     return;
   }
@@ -34,25 +36,20 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
     if (locations && locations.length > 0) {
       const location = locations[0];
 
-      Logger.debug(
-        `BackgroundLocation: Got location update: ${location.coords.latitude}, ${location.coords.longitude}`
+      logger.debug(
+        `Got location update: ${location.coords.latitude}, ${location.coords.longitude}`,
       );
 
       try {
         // Send location to backend
-        await updateLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
+        // await updateLocation({
+        //   latitude: location.coords.latitude,
+        //   longitude: location.coords.longitude,
+        // });
 
-        Logger.debug(
-          "BackgroundLocation: Location sent to backend successfully"
-        );
+        logger.debug("Location sent to backend successfully");
       } catch (error) {
-        Logger.exception(
-          error as Error,
-          "BackgroundLocation: Failed to send location to backend"
-        );
+        logger.exception(error as Error, "Failed to send location to backend");
       }
     }
   }
@@ -64,20 +61,18 @@ export class BackgroundLocationService {
    */
   static async requestBackgroundPermissions(): Promise<boolean> {
     try {
-      Logger.debug("BackgroundLocation: Requesting background permissions");
+      logger.debug("Requesting background permissions");
 
       // First check foreground permissions
       const foreground = await Location.getForegroundPermissionsAsync();
 
       if (foreground.status !== "granted") {
-        Logger.debug(
-          "BackgroundLocation: Foreground permission not granted, requesting..."
-        );
+        logger.debug("Foreground permission not granted, requesting...");
 
         // Show explanation before requesting
         const shouldRequest = await this.showPermissionExplanation(
           "Autoriser la localisation",
-          "Pour vous permettre de réaliser des livraisons, l'application a besoin d'accéder à votre position."
+          "Pour vous permettre de réaliser des livraisons, l'application a besoin d'accéder à votre position.",
         );
 
         if (!shouldRequest) {
@@ -88,7 +83,7 @@ export class BackgroundLocationService {
           await Location.requestForegroundPermissionsAsync();
 
         if (foregroundRequest.status !== "granted") {
-          Logger.error("BackgroundLocation: Foreground permission denied");
+          logger.error("Foreground permission denied");
           await this.showGoToSettingsAlert();
           return false;
         }
@@ -101,7 +96,7 @@ export class BackgroundLocationService {
         // Show explanation before requesting background
         const shouldRequestBackground = await this.showPermissionExplanation(
           "Autoriser la localisation en arrière-plan",
-          "Pour suivre vos livraisons même lorsque l'application est fermée, veuillez autoriser l'accès à la localisation 'Toujours'."
+          "Pour suivre vos livraisons même lorsque l'application est fermée, veuillez autoriser l'accès à la localisation 'Toujours'.",
         );
 
         if (!shouldRequestBackground) {
@@ -112,19 +107,16 @@ export class BackgroundLocationService {
           await Location.requestBackgroundPermissionsAsync();
 
         if (backgroundRequest.status !== "granted") {
-          Logger.error("BackgroundLocation: Background permission denied");
+          logger.error("Background permission denied");
           await this.showGoToSettingsAlert();
           return false;
         }
       }
 
-      Logger.debug("BackgroundLocation: All permissions granted");
+      logger.debug("All permissions granted");
       return true;
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "BackgroundLocation: Failed to request permissions"
-      );
+      logger.exception(error as Error, "Failed to request permissions");
       return false;
     }
   }
@@ -134,7 +126,7 @@ export class BackgroundLocationService {
    */
   private static showPermissionExplanation(
     title: string,
-    message: string
+    message: string,
   ): Promise<boolean> {
     return new Promise((resolve) => {
       Alert.alert(
@@ -151,7 +143,7 @@ export class BackgroundLocationService {
             onPress: () => resolve(true),
           },
         ],
-        { cancelable: false }
+        { cancelable: false },
       );
     });
   }
@@ -181,20 +173,17 @@ export class BackgroundLocationService {
                     IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS,
                     {
                       data: "package:com.eliteapp",
-                    }
+                    },
                   );
                 }
               } catch (error) {
-                Logger.exception(
-                  error as Error,
-                  "BackgroundLocation: Failed to open settings"
-                );
+                logger.exception(error as Error, "Failed to open settings");
               }
               resolve();
             },
           },
         ],
-        { cancelable: false }
+        { cancelable: false },
       );
     });
   }
@@ -205,14 +194,11 @@ export class BackgroundLocationService {
   static async isTracking(): Promise<boolean> {
     try {
       const isRegistered = await TaskManager.isTaskRegisteredAsync(
-        BACKGROUND_LOCATION_TASK
+        BACKGROUND_LOCATION_TASK,
       );
       return isRegistered;
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "BackgroundLocation: Failed to check tracking status"
-      );
+      logger.exception(error as Error, "Failed to check tracking status");
       return false;
     }
   }
@@ -226,7 +212,7 @@ export class BackgroundLocationService {
       const isEnabled = await Location.hasServicesEnabledAsync();
 
       if (!isEnabled) {
-        Logger.debug("BackgroundLocation: GPS is disabled");
+        logger.debug("GPS is disabled");
 
         return new Promise((resolve) => {
           Alert.alert(
@@ -237,16 +223,14 @@ export class BackgroundLocationService {
                 text: "Continuer sans GPS",
                 style: "cancel",
                 onPress: () => {
-                  Logger.debug(
-                    "BackgroundLocation: User chose to continue without GPS"
-                  );
+                  logger.debug("User chose to continue without GPS");
                   resolve(true); // Continue with Wi-Fi/cellular fallback
                 },
               },
               {
                 text: "Activer le GPS",
                 onPress: async () => {
-                  Logger.debug("BackgroundLocation: User chose to enable GPS");
+                  logger.debug("User chose to enable GPS");
                   try {
                     // Open location settings
                     if (Platform.OS === "ios") {
@@ -254,31 +238,25 @@ export class BackgroundLocationService {
                     } else {
                       // Android: Open location settings directly
                       await IntentLauncher.startActivityAsync(
-                        IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS
+                        IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS,
                       );
                     }
                   } catch (error) {
-                    Logger.exception(
-                      error as Error,
-                      "BackgroundLocation: Failed to open settings"
-                    );
+                    logger.exception(error as Error, "Failed to open settings");
                   }
                   resolve(true); // Continue anyway
                 },
               },
             ],
-            { cancelable: false }
+            { cancelable: false },
           );
         });
       }
 
-      Logger.debug("BackgroundLocation: GPS is enabled");
+      logger.debug("GPS is enabled");
       return true;
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "BackgroundLocation: Failed to check GPS status"
-      );
+      logger.exception(error as Error, "Failed to check GPS status");
       return true; // Continue anyway on error
     }
   }
@@ -288,28 +266,26 @@ export class BackgroundLocationService {
    */
   static async startTracking(): Promise<boolean> {
     try {
-      Logger.debug("BackgroundLocation: Starting tracking");
+      logger.debug("Starting tracking");
 
       // Check if already tracking
       const isAlreadyTracking = await this.isTracking();
       if (isAlreadyTracking) {
-        Logger.debug("BackgroundLocation: Already tracking, skipping start");
+        logger.debug("Already tracking, skipping start");
         return true;
       }
 
       // Check GPS and prompt user if needed
       const shouldContinue = await this.checkGPSEnabled();
       if (!shouldContinue) {
-        Logger.debug("BackgroundLocation: GPS check cancelled by user");
+        logger.debug("GPS check cancelled by user");
         return false;
       }
 
       // Request permissions
       const hasPermissions = await this.requestBackgroundPermissions();
       if (!hasPermissions) {
-        Logger.error(
-          "BackgroundLocation: Cannot start tracking without permissions"
-        );
+        logger.error("Cannot start tracking without permissions");
         return false;
       }
 
@@ -327,13 +303,10 @@ export class BackgroundLocationService {
         showsBackgroundLocationIndicator: true,
       });
 
-      Logger.debug("BackgroundLocation: Tracking started successfully");
+      logger.debug("Tracking started successfully");
       return true;
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "BackgroundLocation: Failed to start tracking"
-      );
+      logger.exception(error as Error, "Failed to start tracking");
       return false;
     }
   }
@@ -343,21 +316,18 @@ export class BackgroundLocationService {
    */
   static async stopTracking(): Promise<void> {
     try {
-      Logger.debug("BackgroundLocation: Stopping tracking");
+      logger.debug("Stopping tracking");
 
       const isTracking = await this.isTracking();
       if (!isTracking) {
-        Logger.debug("BackgroundLocation: Not tracking, skipping stop");
+        logger.debug("Not tracking, skipping stop");
         return;
       }
 
       await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-      Logger.debug("BackgroundLocation: Tracking stopped successfully");
+      logger.debug("Tracking stopped successfully");
     } catch (error) {
-      Logger.exception(
-        error as Error,
-        "BackgroundLocation: Failed to stop tracking"
-      );
+      logger.exception(error as Error, "Failed to stop tracking");
     }
   }
 

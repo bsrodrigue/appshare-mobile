@@ -5,11 +5,11 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { BottomSheetMenu } from "@/modules/shared/components/views/BottomSheetMenu";
 import { useAuthStore } from "@/store/auth";
 import { SecureStorage } from "@/libs/secure-storage";
 import { SecureStorageKey } from "@/libs/secure-storage/keys";
 import { useRouter } from "expo-router";
+import { BottomSheetMenu } from "../views/BottomSheetMenu";
 
 export interface AppMenuRef {
   open: () => void;

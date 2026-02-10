@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Entypo } from "@expo/vector-icons";
 import { theme, typography } from "@/ui/theme";
-import { StaticAvatar } from "@/modules/shared/components/components/StaticAvatar";
+import { StaticAvatar } from "@/modules/shared/components/StaticAvatar";
 
 interface SectionHeaderProps {
   title: string;

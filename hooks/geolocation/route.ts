@@ -3,6 +3,8 @@ import { MapService, Route } from "@/libs/maps";
 import { Coords } from "@/types/geolocation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const logger = new Logger("useRoute");
+
 interface RouteProps {
   start: Coords;
   destination: Coords;
@@ -33,14 +35,13 @@ export default function useRoute({
     const fetchRoute = async () => {
       // Skip if coordinates are invalid (0,0)
       if (startLat === 0 || startLng === 0 || destLat === 0 || destLng === 0) {
-        Logger.debug("useRoute: Skipping fetch - invalid coordinates");
+        logger.debug("Skipping fetch - invalid coordinates");
         return;
       }
 
       try {
-        Logger.setModuleName("useRoute");
-        Logger.debug(
-          `Fetching route: (${startLat}, ${startLng}) -> (${destLat}, ${destLng})`
+        logger.debug(
+          `Fetching route: (${startLat}, ${startLng}) -> (${destLat}, ${destLng})`,
         );
 
         const fetchedRoute = await mapService.getDirections({
@@ -51,12 +52,12 @@ export default function useRoute({
 
         if (!cancelled) {
           setRoute(fetchedRoute);
-          Logger.debug(
-            `Route updated: ${fetchedRoute.distance.text}, ${fetchedRoute.duration.text}`
+          logger.debug(
+            `Route updated: ${fetchedRoute.distance.text}, ${fetchedRoute.duration.text}`,
           );
         }
       } catch (error) {
-        Logger.error("Failed to fetch route", error);
+        logger.error("Failed to fetch route", error);
         if (!cancelled) {
           setRoute(null);
         }
