@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRealtime } from "../realtime";
 import { Logger } from "@/libs/log";
-import { Coords } from "@/types/geolocation";
+import { Coords } from "@/modules/shared";
 
 type DeliverymanLocationUpdate = {
   course_id: number;
@@ -54,7 +54,7 @@ export default function useTrackCourse({ courseId }: TrackCourseProps) {
     };
 
     setupRealtime();
-  }, [courseId, handleLocationUpdate, channelName, logger]);
+  }, [courseId, handleLocationUpdate, channelName, logger, subscribe]);
 
   useEffect(() => {
     return () => {

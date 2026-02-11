@@ -30,11 +30,11 @@ export default function useInitApp() {
 
     // 1. Initialize environment variables
     try {
+      logger.debug("Initializing environment variables...");
       EnvService.init();
       logger.debug("✅ Environment variables validated.");
     } catch (error) {
       logger.error(`Failed to initialize environment: ${error}`);
-      // In a real app, you might show a fatal error screen here
     }
 
     // 2. Initialize API Client

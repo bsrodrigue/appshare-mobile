@@ -8,7 +8,7 @@ import axios, {
 import { Logger } from "../log";
 import { JSONService } from "../json";
 import { TokenService, TokenPair } from "../token";
-import { ApiResponse, ErrorModel } from "@/types/api";
+import { ApiResponse, ErrorModel } from "@/modules/shared";
 
 export class HTTPClient {
   private instance: AxiosInstance;

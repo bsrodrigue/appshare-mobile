@@ -6,7 +6,7 @@ import { Logger } from "../log";
  * Environment variable schema definition
  */
 const envSchema = z.object({
-  API_URL: z.string().url("API URL must be a valid URL"),
+  API_URL: z.url("API URL must be a valid URL"),
   GOOGLE_MAPS_API_KEY: z.string().min(1, "Google Maps API Key is required"),
   GOOGLE_MAPS_DIRECTIONS_BASE_URL: z.string().optional(),
   ONESIGNAL_APP_ID: z.string().min(1, "OneSignal App ID is required"),
@@ -36,7 +36,9 @@ export default class EnvService {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const missing = error.issues.map((i) => i.path.join(".")).join(", ");
-        throw new Error(`Environment validation failed for: ${missing}`);
+        const errMessage = `Environment validation failed for: ${missing}, reason: ${error.message}`;
+        this.logger.error(errMessage);
+        throw new Error(errMessage);
       }
       throw error;
     }

@@ -16,7 +16,7 @@ import { useFilePicker } from "@/hooks/useFileUpload";
 import { COUNTRY_CODE } from "@/constants/auth";
 import { theme } from "@/ui/theme";
 import { useRegister } from "@/modules/auth/hooks";
-import { AllowedRegistrationRolesSchema } from "@/types/role";
+import { AllowedRegistrationRolesSchema } from "@/modules/shared";
 import Toast from "react-native-toast-message";
 import { Button } from "@/modules/shared/components/Button";
 import { TokenService } from "@/libs/token";

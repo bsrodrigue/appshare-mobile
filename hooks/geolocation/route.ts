@@ -1,6 +1,6 @@
 import { Logger } from "@/libs/log";
 import { MapService, Route } from "@/libs/maps";
-import { Coords } from "@/types/geolocation";
+import { Coords } from "@/modules/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface RouteProps {

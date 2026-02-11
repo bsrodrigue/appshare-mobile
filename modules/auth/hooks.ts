@@ -14,7 +14,7 @@ import {
   ResendOTPParams,
   ResendOTPResponse,
 } from "@/modules/auth/api";
-import { UserResponse } from "@/types/api";
+import { UserResponse } from "@/modules/shared";
 import { useCall } from "@/hooks/api";
 
 // ============================================================================

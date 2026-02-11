@@ -1,31 +1,30 @@
 import { APIService } from "@/libs/api/client";
-import { ApiInputError, ApiOutputError } from "@/types/errors";
+import { ApiInputError, ApiOutputError } from "@/modules/shared/errors";
+import { ApiResponseSchema, EmptyDataSchema } from "@/modules/shared/types";
+import type { UserResponse, EmptyData } from "@/modules/shared/types";
 import {
-  LoginParamsSchema,
-  AuthApiResponseSchema,
-  RegisterParamsSchema,
-  RefreshTokenParamsSchema,
-  RefreshApiResponseSchema,
-  MeApiResponseSchema,
-  VerifyOTPParamsSchema,
-  VerifyOTPApiResponseSchema,
-  ResendOTPParamsSchema,
-  ResendOTPApiResponseSchema,
-} from "@/types/auth";
-import type {
   LoginParams,
+  LoginParamsSchema,
   LoginResponse,
+  AuthApiResponseSchema,
   RegisterParams,
+  RegisterParamsSchema,
   RegisterResponse,
   RefreshTokenParams,
+  RefreshTokenParamsSchema,
   RefreshTokenResponse,
+  RefreshApiResponseSchema,
   VerifyOTPParams,
+  VerifyOTPParamsSchema,
   ResendOTPParams,
+  ResendOTPParamsSchema,
   ResendOTPResponse,
-} from "@/types/auth";
-import { ApiResponseSchema, EmptyDataSchema } from "@/types/api";
-import type { UserResponse, EmptyData } from "@/types/api";
-import { z } from "zod";
+  ResendOTPApiResponseSchema,
+  MeApiResponseSchema,
+  VerifyOTPApiResponseSchema,
+  ChangePasswordParams,
+  ChangePasswordParamsSchema,
+} from "./types";
 
 export type {
   LoginParams,
@@ -39,6 +38,7 @@ export type {
   ResendOTPResponse,
   UserResponse,
   EmptyData,
+  ChangePasswordParams,
 };
 
 // ============================================================================
@@ -150,13 +150,6 @@ export async function resendOTP(
 // ============================================================================
 // Change Password
 // ============================================================================
-
-export const ChangePasswordParamsSchema = z.object({
-  current_password: z.string().min(1),
-  new_password: z.string().min(8),
-});
-
-export type ChangePasswordParams = z.infer<typeof ChangePasswordParamsSchema>;
 
 export async function changePassword(
   params: ChangePasswordParams,

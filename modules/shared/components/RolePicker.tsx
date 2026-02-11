@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { theme } from '@/ui/theme';
-import { UserRole } from '@/types/role';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { theme } from "@/ui/theme";
+import { UserRole } from "@/modules/shared";
 
 interface RolePickerProps {
   name: string;
@@ -33,10 +33,10 @@ export const RolePicker = React.memo<RolePickerProps>(
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
-  )
+  ),
 );
 
-RolePicker.displayName = 'RolePicker';
+RolePicker.displayName = "RolePicker";
 
 const styles = StyleSheet.create({
   container: {
@@ -46,10 +46,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.inputBackground,
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
-    borderColor: 'transparent',
-    overflow: 'hidden',
+    borderColor: "transparent",
+    overflow: "hidden",
     height: 48,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   pickerError: {
     borderColor: theme.colors.error,

@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { AxiosRequestConfig, AxiosError } from "axios";
 import { APIService } from "@/libs/api/client";
-import { ApiResponse, ErrorModel } from "@/types/api";
+import { ApiResponse, ErrorModel } from "@/modules/shared/types";
 import * as Haptics from "expo-haptics";
 
 interface UseApiState<T> {

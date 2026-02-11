@@ -45,9 +45,25 @@ export class Logger {
       return;
     }
 
-    const timestamp = new Date().toISOString();
+    // HH:mm:ss
+    const timestamp = new Date().toTimeString().split(" ")[0];
     const levelName = LogLevel[level];
-    const prefix = `[${timestamp}] [${this.context}:${levelName}]`;
+
+    // Colors (ANSI escape codes)
+    const reset = "\x1b[0m";
+    const dim = "\x1b[2m";
+    const contextColor = "\x1b[35m"; // Magenta
+
+    const colors = {
+      DEBUG: "\x1b[36m", // Cyan
+      INFO: "\x1b[32m", // Green
+      WARN: "\x1b[33m", // Yellow
+      ERROR: "\x1b[31m", // Red
+    };
+
+    const levelColor = colors[levelName as keyof typeof colors] || reset;
+
+    const prefix = `[${dim}${timestamp}${reset}] [${contextColor}${this.context}${reset}:${levelColor}${levelName}${reset}]`;
     const output = [prefix, message, ...optionalParams];
 
     switch (level) {

@@ -1,33 +1,25 @@
-import { z } from "zod";
 import { APIService } from "@/libs/api/client";
-import { ApiInputError, ApiOutputError } from "@/types/errors";
-import { ApiResponseSchema, EmptyDataSchema, EmptyData } from "@/types/api";
-
-// ============================================================================
-// Project Response Schema
-// ============================================================================
-
-export const ProjectResponseSchema = z.object({
-  id: z.string().uuid(),
-  title: z.string(),
-  description: z.string(),
-  owner_id: z.string().uuid(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export type ProjectResponse = z.infer<typeof ProjectResponseSchema>;
-
-// ============================================================================
-// API Response Wrappers
-// ============================================================================
-
-export const ProjectApiResponseSchema = ApiResponseSchema(
-  ProjectResponseSchema,
-);
-export const ProjectsListApiResponseSchema = ApiResponseSchema(
-  z.array(ProjectResponseSchema).nullable(),
-);
+import { ApiInputError, ApiOutputError } from "@/modules/shared";
+import {
+  ApiResponseSchema,
+  EmptyDataSchema,
+  EmptyData,
+} from "@/modules/shared/types";
+import {
+  ProjectResponse,
+  ProjectApiResponseSchema,
+  ProjectsListApiResponseSchema,
+  GetProjectParams,
+  GetProjectParamsSchema,
+  CreateProjectParams,
+  CreateProjectParamsSchema,
+  UpdateProjectParams,
+  UpdateProjectParamsSchema,
+  DeleteProjectParams,
+  DeleteProjectParamsSchema,
+  TransferOwnershipParams,
+  TransferOwnershipParamsSchema,
+} from "./types";
 
 // ============================================================================
 // List My Projects
@@ -51,12 +43,6 @@ export async function listMyProjects(): Promise<ProjectResponse[] | null> {
 // ============================================================================
 // Get Project
 // ============================================================================
-
-export const GetProjectParamsSchema = z.object({
-  id: z.string().uuid("Invalid project ID format"),
-});
-
-export type GetProjectParams = z.infer<typeof GetProjectParamsSchema>;
 
 /**
  * Retrieve a specific project by ID.
@@ -87,18 +73,6 @@ export async function getProject(
 // Create Project
 // ============================================================================
 
-export const CreateProjectParamsSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Title is required")
-    .max(100, "Title must be at most 100 characters"),
-  description: z
-    .string()
-    .max(1000, "Description must be at most 1000 characters"),
-});
-
-export type CreateProjectParams = z.infer<typeof CreateProjectParamsSchema>;
-
 /**
  * Create a new project.
  * The authenticated user becomes the owner.
@@ -128,14 +102,6 @@ export async function createProject(
 // ============================================================================
 // Update Project
 // ============================================================================
-
-export const UpdateProjectParamsSchema = z.object({
-  id: z.string().uuid("Invalid project ID format"),
-  title: z.string().min(1).max(100).optional(),
-  description: z.string().max(1000).optional(),
-});
-
-export type UpdateProjectParams = z.infer<typeof UpdateProjectParamsSchema>;
 
 /**
  * Update a project's title and/or description.
@@ -169,12 +135,6 @@ export async function updateProject(
 // Delete Project
 // ============================================================================
 
-export const DeleteProjectParamsSchema = z.object({
-  id: z.string().uuid("Invalid project ID format"),
-});
-
-export type DeleteProjectParams = z.infer<typeof DeleteProjectParamsSchema>;
-
 /**
  * Soft delete a project.
  * Only the owner can delete.
@@ -204,15 +164,6 @@ export async function deleteProject(
 // ============================================================================
 // Transfer Project Ownership
 // ============================================================================
-
-export const TransferOwnershipParamsSchema = z.object({
-  id: z.string().uuid("Invalid project ID format"),
-  new_owner_id: z.string().uuid("Invalid new owner ID format"),
-});
-
-export type TransferOwnershipParams = z.infer<
-  typeof TransferOwnershipParamsSchema
->;
 
 /**
  * Transfer ownership of a project to another user.

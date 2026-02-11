@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { UserResponse } from "@/types/api";
+import { UserResponse } from "@/modules/shared";
 import { TokenService } from "@/libs/token";
 import { Logger } from "@/libs/log";
 
