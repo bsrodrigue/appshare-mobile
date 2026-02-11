@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 export default function EliteLogo() {
   return (
     <View style={styles.header}>
-      <Text style={styles.logo}>Elite</Text>
+      <Text style={styles.logo}>AppShare</Text>
       <View style={styles.logoDot} />
     </View>
   );
@@ -12,13 +12,13 @@ export default function EliteLogo() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.xl,
   },
   logo: {
     fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.textWhite,
     letterSpacing: -2,
   },
@@ -31,4 +31,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

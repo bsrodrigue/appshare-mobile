@@ -5,13 +5,13 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { theme } from "@/ui/theme";
-import Toast from "react-native-toast-message";
 import { useLogin } from "@/modules/auth/hooks";
 import { TokenService } from "@/libs/token";
 import { useAuthStore } from "@/store/auth";
 import { Input } from "@/modules/shared/components/Input";
 import { PasswordInput } from "@/modules/auth/components/PasswordInput";
 import { Button } from "@/modules/shared/components/Button";
+import { Toaster } from "@/libs/notification/toast";
 
 interface LoginScreenProps {
   onToggleMode: () => void;
@@ -47,11 +47,7 @@ const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
     },
 
     onError(error) {
-      Toast.show({
-        type: "error",
-        text1: "Erreur",
-        text2: error,
-      });
+      Toaster.error("Erreur", error);
     },
   });
 

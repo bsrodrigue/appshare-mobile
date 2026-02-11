@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { useRouter } from "expo-router";
@@ -7,35 +6,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Input } from "@/modules/shared/components/Input";
 import { PasswordInput } from "@/modules/auth/components/PasswordInput";
-import { FileUploadButton } from "@/modules/shared/components/FileUploadButton";
-import { Checkbox } from "@/modules/shared/components/Checkbox";
 import { PhoneInput } from "@/modules/shared/components/PhoneInput";
-import { RolePicker } from "@/modules/shared/components/RolePicker";
-import { DatePicker } from "@/modules/shared/components/DatePicker";
-import { useFilePicker } from "@/hooks/useFileUpload";
 import { COUNTRY_CODE } from "@/constants/auth";
 import { theme } from "@/ui/theme";
 import { useRegister } from "@/modules/auth/hooks";
-import { AllowedRegistrationRolesSchema } from "@/modules/shared";
-import Toast from "react-native-toast-message";
 import { Button } from "@/modules/shared/components/Button";
 import { TokenService } from "@/libs/token";
 import { useAuthStore } from "@/store/auth";
+import { Toaster } from "@/libs/notification/toast";
 
 const registerSchema = z
   .object({
     firstName: z.string().min(1, "Prénom requis"),
     lastName: z.string().min(1, "Nom requis"),
-    birthDate: z.date(),
-    email: z.string().email("Adresse email invalide"),
-    role: AllowedRegistrationRolesSchema,
+    username: z
+      .string()
+      .min(3, "Le nom d'utilisateur doit contenir au moins 3 caractères")
+      .max(30),
+    email: z.email("Adresse email invalide"),
     password: z.string().min(8, "Minimum 8 caractères"),
     passwordConfirmation: z.string().min(8, "Minimum 8 caractères"),
     phoneNumber: z.string().min(1, "Numéro de téléphone requis"),
-    promoCode: z.string().optional().nullable(),
-    shopName: z.string().optional().nullable(),
-    cnibRecto: z.string().optional().nullable(),
-    cnibVerso: z.string().optional().nullable(),
   })
   .refine((data) => data.password === data.passwordConfirmation, {
     message: "Les mots de passe ne correspondent pas",
@@ -47,16 +38,11 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 const defaultRegisterValues: RegisterFormData = {
   firstName: "",
   lastName: "",
+  username: "",
   email: "",
   password: "",
   passwordConfirmation: "",
   phoneNumber: "",
-  promoCode: null,
-  role: "client",
-  birthDate: new Date(),
-  shopName: null,
-  cnibRecto: null,
-  cnibVerso: null,
 };
 
 interface RegisterScreenProps {
@@ -64,25 +50,17 @@ interface RegisterScreenProps {
 }
 
 const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [termsError, setTermsError] = useState<string | undefined>();
   const router = useRouter();
-  const { files, loading, pickImage } = useFilePicker();
   const { setUser } = useAuthStore();
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    setValue,
-    getValues,
-    watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: defaultRegisterValues,
   });
-
-  const selectedRole = watch("role");
 
   const { callRegister, isLoading } = useRegister({
     onSuccess(response) {
@@ -97,40 +75,25 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
 
       setUser(user);
 
-      const phone = getValues("phoneNumber");
-      router.replace(`/otp?phone=${encodeURIComponent(phone)}`);
+      // Redirect to root, root layout will handle authentication guard
+      router.replace("/");
     },
     onError(error) {
-      Toast.show({ type: "error", text1: "Erreur", text2: error });
+      Toaster.error("Erreur", error);
     },
   });
 
-  useEffect(() => {
-    Object.entries(files).forEach(([key, value]) => {
-      if (value) setValue(key as any, value);
-    });
-  }, [files, setValue]);
-
-  const toggleTerms = () => {
-    setAcceptedTerms(!acceptedTerms);
-    setTermsError(undefined);
-  };
-
   const onSubmit = async (data: RegisterFormData) => {
-    if (!acceptedTerms) {
-      setTermsError("Veuillez accepter les termes et conditions");
-      return;
-    }
-
     const payload = {
-      ...data,
-      username: data.email.split("@")[0],
+      email: data.email,
+      username: data.username,
       first_name: data.firstName,
       last_name: data.lastName,
       phone_number: data.phoneNumber,
+      password: data.password,
     };
 
-    await callRegister(payload as any);
+    await callRegister(payload);
   };
 
   return (
@@ -170,14 +133,15 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
 
       <Controller
         control={control}
-        name="birthDate"
+        name="username"
         render={({ field: { onChange, value } }) => (
-          <DatePicker
-            placeholder="Date de naissance"
-            value={value}
-            onChange={onChange}
+          <Input
+            placeholder="Nom d'utilisateur"
+            value={value || ""}
+            onChangeText={onChange}
+            autoCapitalize="none"
             disabled={isLoading}
-            error={errors.birthDate?.message}
+            error={errors.username?.message}
           />
         )}
       />
@@ -191,65 +155,12 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             value={value || ""}
             onChangeText={onChange}
             keyboardType="email-address"
+            autoCapitalize="none"
             disabled={isLoading}
             error={errors.email?.message}
           />
         )}
       />
-
-      <Controller
-        control={control}
-        name="role"
-        render={({ field: { onChange, value } }) => (
-          <RolePicker
-            name="role"
-            value={(value as any) || ""}
-            onValueChange={onChange}
-            disabled={isLoading}
-            error={errors.role?.message}
-          />
-        )}
-      />
-
-      {selectedRole === "seller" && (
-        <Controller
-          control={control}
-          name="shopName"
-          render={({ field: { onChange, value } }) => (
-            <Input
-              placeholder="Nom de la boutique"
-              value={value ?? ""}
-              onChangeText={onChange}
-              disabled={isLoading}
-              error={errors.shopName?.message}
-            />
-          )}
-        />
-      )}
-
-      {(selectedRole === "seller" || selectedRole === "delivery_man") && (
-        <>
-          <FileUploadButton
-            onPress={() => pickImage("cnibRecto")}
-            hasFile={!!watch("cnibRecto")}
-            placeholder="Photo CNIB recto *"
-            uploadedText="CNIB recto chargé"
-            disabled={isLoading}
-            loading={loading.cnibRecto}
-            error={errors.cnibRecto?.message}
-          />
-
-          <FileUploadButton
-            onPress={() => pickImage("cnibVerso")}
-            hasFile={!!watch("cnibVerso")}
-            placeholder="Photo CNIB verso *"
-            uploadedText="CNIB verso chargé"
-            disabled={isLoading}
-            loading={loading.cnibVerso}
-            error={errors.cnibVerso?.message}
-          />
-        </>
-      )}
 
       <Controller
         control={control}
@@ -291,14 +202,6 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             error={errors.phoneNumber?.message}
           />
         )}
-      />
-
-      <Checkbox
-        checked={acceptedTerms}
-        onPress={toggleTerms}
-        label="J'accepte les conditions"
-        disabled={isLoading}
-        error={termsError}
       />
 
       <Button

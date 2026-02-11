@@ -1,31 +1,6 @@
 import { z } from "zod";
 
 // ============================================================================
-// Roles
-// ============================================================================
-
-export const UserRoles = [
-  "admin",
-  "job_publisher",
-  "user",
-  "client",
-  "delivery_man",
-  "seller",
-] as const;
-export const UserRoleSchema = z.enum(UserRoles);
-export type UserRole = z.infer<typeof UserRoleSchema>;
-
-export const AllowedRegistrationRoles = [
-  "client",
-  "delivery_man",
-  "seller",
-] as const satisfies readonly UserRole[];
-export const AllowedRegistrationRolesSchema = z.enum(AllowedRegistrationRoles);
-export type AllowedRegistrationRole = z.infer<
-  typeof AllowedRegistrationRolesSchema
->;
-
-// ============================================================================
 // Geolocation
 // ============================================================================
 
@@ -41,8 +16,8 @@ export type Coords = {
 export const TokenResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
-  access_token_expires_at: z.string().datetime(),
-  refresh_token_expires_at: z.string().datetime(),
+  access_token_expires_at: z.iso.datetime(),
+  refresh_token_expires_at: z.iso.datetime(),
   token_type: z.literal("Bearer"),
 });
 
