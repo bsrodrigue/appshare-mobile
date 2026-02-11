@@ -2,6 +2,8 @@ import { OneSignal, LogLevel } from "react-native-onesignal";
 import EnvService from "../env";
 import { Logger } from "../log";
 
+const logger = new Logger("PushNotificationService");
+
 async function init() {
   OneSignal.Debug.setLogLevel(LogLevel.Verbose);
   OneSignal.initialize(EnvService.ONESIGNAL_APP_ID);
@@ -10,8 +12,7 @@ async function init() {
 
 export default class PushNotificationService {
   static async init() {
-    Logger.setModuleName("PushNotificationService");
-    Logger.debug("Initializing push notification service");
+    logger.debug("Initializing push notification service");
     await init();
   }
 }

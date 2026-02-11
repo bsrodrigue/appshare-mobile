@@ -4,122 +4,71 @@ import { Logger } from "../log";
 
 /**
  * Environment variable schema definition
- * Add all required environment variables here
  */
 const envSchema = z.object({
-  // API Configuration
-  API_URL: z.url("API URL must be a valid URL"),
+  API_URL: z.string().url("API URL must be a valid URL"),
+  GOOGLE_MAPS_API_KEY: z.string().min(1, "Google Maps API Key is required"),
+  GOOGLE_MAPS_DIRECTIONS_BASE_URL: z.string().optional(),
+  ONESIGNAL_APP_ID: z.string().min(1, "OneSignal App ID is required"),
+  PUSHER_KEY: z.string().min(1, "Pusher Key is required"),
+  PUSHER_CLUSTER: z.string().min(1, "Pusher Cluster is required"),
 });
 
 type Env = z.infer<typeof envSchema>;
 
-/**
- * EnvService - Fully static environment variable manager
- *
- * Features:
- * - Validates all required environment variables at application start
- * - Exposes env vars through predictable static getters
- * - Throws clear errors for missing variables
- * - No instance needed (fully static)
- *
- * Usage:
- * 1. Call EnvService.init() at application start (e.g., in App.tsx or _layout.tsx)
- * 2. Access variables via EnvService.GOOGLE_MAPS_API_KEY, EnvService.ONESIGNAL_APP_ID, etc.
- */
 export default class EnvService {
+  private static readonly logger = new Logger("EnvService");
   private static env: Env | null = null;
   private static initialized = false;
 
-  /**
-   * Private constructor to prevent instantiation
-   */
   private constructor() {
     throw new Error("EnvService is a static class and cannot be instantiated");
   }
 
-  /**
-   * Initialize and validate environment variables
-   * Must be called at application start before accessing any env vars
-   *
-   * @throws {z.ZodError} If required environment variables are missing or invalid
-   */
   public static init(): void {
-    if (this.initialized) {
-      return;
-    }
+    if (this.initialized) return;
 
     try {
-      // Read from Constants.expoConfig.extra (baked in at build time from app.config.ts)
       const extra = Constants.expoConfig?.extra ?? {};
-
-      Logger.setModuleName("EnvService");
-      for (const [key, value] of Object.entries(extra)) {
-        Logger.debug(`${key}: ${value}`);
-      }
-
       this.env = envSchema.parse(extra);
       this.initialized = true;
+      this.logger.debug("EnvService initialized successfully");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const missingVars = error.issues
-          .map((issue: z.ZodIssue) => {
-            const path = issue.path.join(".");
-            return `  - ${path}: ${issue.message}`;
-          })
-          .join("\n");
-
-        throw new Error(
-          `❌ Environment variable validation failed:\n${missingVars}\n\n` +
-            `Please check your .env file and ensure all required variables are set.`,
-        );
+        const missing = error.issues.map((i) => i.path.join(".")).join(", ");
+        throw new Error(`Environment validation failed for: ${missing}`);
       }
       throw error;
     }
   }
 
-  /**
-   * Ensure the service has been initialized
-   * @throws {Error} If init() has not been called
-   */
-  private static ensureInitialized(): void {
+  private static getVar<K extends keyof Env>(key: K): Env[K] {
     if (!this.initialized || !this.env) {
-      throw new Error(
-        "EnvService has not been initialized. Call EnvService.init() at application start.",
-      );
+      this.init();
     }
+    return this.env![key];
   }
 
-  /**
-   * Get all environment variables (use sparingly, prefer specific getters)
-   */
-  public static getAll(): Readonly<Env> {
-    this.ensureInitialized();
-    return this.env!;
-  }
-
-  // ============================================================================
-  // Static Getters - Predictable access to environment variables
-  // ============================================================================
-
-  /**
-   * API Base URL
-   */
   public static get API_URL(): string {
-    this.ensureInitialized();
-    return this.env!.API_URL;
+    return this.getVar("API_URL");
+  }
+  public static get GOOGLE_MAPS_API_KEY(): string {
+    return this.getVar("GOOGLE_MAPS_API_KEY");
+  }
+  public static get GOOGLE_MAPS_DIRECTIONS_BASE_URL(): string | undefined {
+    return this.getVar("GOOGLE_MAPS_DIRECTIONS_BASE_URL");
+  }
+  public static get ONESIGNAL_APP_ID(): string {
+    return this.getVar("ONESIGNAL_APP_ID");
+  }
+  public static get PUSHER_KEY(): string {
+    return this.getVar("PUSHER_KEY");
+  }
+  public static get PUSHER_CLUSTER(): string {
+    return this.getVar("PUSHER_CLUSTER");
   }
 
-  /**
-   * Check if running in development mode
-   */
   public static get isDevelopment(): boolean {
     return __DEV__;
-  }
-
-  /**
-   * Check if running in production mode
-   */
-  public static get isProduction(): boolean {
-    return !__DEV__;
   }
 }

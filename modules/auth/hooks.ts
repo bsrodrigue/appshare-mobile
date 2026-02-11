@@ -4,22 +4,26 @@ import {
   register,
   LoginParams,
   LoginResponse,
-  MeResponse,
-  ResendOTPParams,
-  ResendOTPResponse,
-  VerifyPhoneParams,
-  VerifyPhoneResponse,
   login,
   me,
+  changePassword,
+  ChangePasswordParams,
+  verifyOTP,
   resendOTP,
-  verifyPhone,
+  VerifyOTPParams,
+  ResendOTPParams,
+  ResendOTPResponse,
 } from "@/modules/auth/api";
+import { UserResponse } from "@/types/api";
 import { useCall } from "@/hooks/api";
 
+// ============================================================================
 // Login
+// ============================================================================
+
 export interface UseLoginParams {
-  onSuccess: (response: LoginResponse) => void;
-  onError: (error: string) => void;
+  onSuccess?: (response: LoginResponse) => void;
+  onError?: (error: string) => void;
 }
 
 export function useLogin({ onSuccess, onError }: UseLoginParams) {
@@ -35,10 +39,13 @@ export function useLogin({ onSuccess, onError }: UseLoginParams) {
   };
 }
 
+// ============================================================================
 // Register
+// ============================================================================
+
 export interface UseRegisterParams {
-  onSuccess: (response: RegisterResponse) => void;
-  onError: (error: string) => void;
+  onSuccess?: (response: RegisterResponse) => void;
+  onError?: (error: string) => void;
 }
 
 export function useRegister({ onSuccess, onError }: UseRegisterParams) {
@@ -54,10 +61,31 @@ export function useRegister({ onSuccess, onError }: UseRegisterParams) {
   };
 }
 
-// Resend
+// ============================================================================
+// OTP & Verification
+// ============================================================================
+
+export interface UseVerifyParams {
+  onSuccess?: (response: LoginResponse) => void;
+  onError?: (error: string) => void;
+}
+
+export function useVerify({ onSuccess, onError }: UseVerifyParams) {
+  const { execute, loading } = useCall<LoginResponse, VerifyOTPParams>({
+    fn: verifyOTP,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callVerify: execute,
+    isLoading: loading,
+  };
+}
+
 export interface UseResendParams {
-  onSuccess: (response: ResendOTPResponse) => void;
-  onError: (error: string) => void;
+  onSuccess?: (response: ResendOTPResponse) => void;
+  onError?: (error: string) => void;
 }
 
 export function useResend({ onSuccess, onError }: UseResendParams) {
@@ -73,33 +101,17 @@ export function useResend({ onSuccess, onError }: UseResendParams) {
   };
 }
 
-// Verify
-export interface UseVerifyParams {
-  onSuccess: (response: VerifyPhoneResponse) => void;
-  onError: (error: string) => void;
-}
+// ============================================================================
+// Me (Get Current User)
+// ============================================================================
 
-export function useVerify({ onSuccess, onError }: UseVerifyParams) {
-  const { execute, loading } = useCall<VerifyPhoneResponse, VerifyPhoneParams>({
-    fn: verifyPhone,
-    onSuccess,
-    onError,
-  });
-
-  return {
-    callVerify: execute,
-    isLoading: loading,
-  };
-}
-
-// Me
 export interface UseMeParams {
-  onSuccess?: (response: MeResponse) => void;
+  onSuccess?: (response: UserResponse) => void;
   onError?: (error: string) => void;
 }
 
 export function useMe({ onSuccess, onError }: UseMeParams) {
-  const { execute, loading } = useCall<MeResponse, void>({
+  const { execute, loading } = useCall<UserResponse, void>({
     fn: me,
     onSuccess,
     onError,
@@ -107,6 +119,31 @@ export function useMe({ onSuccess, onError }: UseMeParams) {
 
   return {
     callMe: execute,
+    isLoading: loading,
+  };
+}
+
+// ============================================================================
+// Change Password
+// ============================================================================
+
+export interface UseChangePasswordParams {
+  onSuccess?: () => void;
+  onError?: (error: string) => void;
+}
+
+export function useChangePassword({
+  onSuccess,
+  onError,
+}: UseChangePasswordParams) {
+  const { execute, loading } = useCall<any, ChangePasswordParams>({
+    fn: changePassword,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callChangePassword: execute,
     isLoading: loading,
   };
 }

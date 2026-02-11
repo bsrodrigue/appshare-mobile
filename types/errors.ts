@@ -1,6 +1,8 @@
 import { Logger } from "@/libs/log";
 import { z } from "zod";
 
+const logger = new Logger("DomainError");
+
 export abstract class DomainError extends Error {
   readonly code: string;
 
@@ -10,7 +12,7 @@ export abstract class DomainError extends Error {
     this.name = new.target.name;
     this.code = code;
 
-    Logger.error(`${this.name}: ${this.message}`);
+    logger.error(`${this.name}: ${this.message}`);
 
     Object.setPrototypeOf(this, new.target.prototype);
   }

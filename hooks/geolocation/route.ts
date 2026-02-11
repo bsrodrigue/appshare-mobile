@@ -14,6 +14,7 @@ export default function useRoute({
   destination,
   mode = "driving",
 }: RouteProps) {
+  const logger = useRef(new Logger("useRoute")).current;
   const [route, setRoute] = useState<Route | null>(null);
   const mapService = useRef(new MapService()).current;
 
@@ -33,14 +34,13 @@ export default function useRoute({
     const fetchRoute = async () => {
       // Skip if coordinates are invalid (0,0)
       if (startLat === 0 || startLng === 0 || destLat === 0 || destLng === 0) {
-        Logger.debug("useRoute: Skipping fetch - invalid coordinates");
+        logger.debug("Skipping fetch - invalid coordinates");
         return;
       }
 
       try {
-        Logger.setModuleName("useRoute");
-        Logger.debug(
-          `Fetching route: (${startLat}, ${startLng}) -> (${destLat}, ${destLng})`
+        logger.debug(
+          `Fetching route: (${startLat}, ${startLng}) -> (${destLat}, ${destLng})`,
         );
 
         const fetchedRoute = await mapService.getDirections({
@@ -51,12 +51,15 @@ export default function useRoute({
 
         if (!cancelled) {
           setRoute(fetchedRoute);
-          Logger.debug(
-            `Route updated: ${fetchedRoute.distance.text}, ${fetchedRoute.duration.text}`
+          logger.debug(
+            `Route updated: ${fetchedRoute.distance.text}, ${fetchedRoute.duration.text}`,
           );
         }
       } catch (error) {
-        Logger.error("Failed to fetch route", error);
+        logger.error(
+          `Failed to fetch route between (${startLat}, ${startLng}) and (${destLat}, ${destLng})`,
+          error,
+        );
         if (!cancelled) {
           setRoute(null);
         }
@@ -68,7 +71,7 @@ export default function useRoute({
     return () => {
       cancelled = true;
     };
-  }, [startLat, startLng, destLat, destLng, mode, mapService]);
+  }, [startLat, startLng, destLat, destLng, mode, mapService, logger]);
 
   return {
     route,

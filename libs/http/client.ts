@@ -1,158 +1,222 @@
 import axios, {
-    AxiosInstance,
-    AxiosRequestConfig,
-    AxiosResponse,
-    AxiosError,
-    InternalAxiosRequestConfig,
-} from 'axios';
-import { Logger } from '../log';
-import { JSONService } from '../json';
-import { SecureStorage } from '../secure-storage';
-import { SecureStorageKey } from '../secure-storage/keys';
-
-export interface APIResponse<T> {
-    data: T;
-    status: number;
-    statusText: string;
-}
-
-export type APIError = {
-    errors: Array<object>;
-    message: string;
-}
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from "axios";
+import { Logger } from "../log";
+import { JSONService } from "../json";
+import { TokenService, TokenPair } from "../token";
+import { ApiResponse, ErrorModel } from "@/types/api";
 
 export class HTTPClient {
-    private instance: AxiosInstance;
+  private instance: AxiosInstance;
+  private logger: Logger;
+  private tokenRefreshHandler:
+    | ((refreshToken: string) => Promise<TokenPair | null>)
+    | null = null;
+  private refreshFailureHandler: (() => void) | null = null;
+  private isRefreshing = false;
+  private refreshSubscribers: ((token: string) => void)[] = [];
 
-    constructor(baseURL: string, config?: AxiosRequestConfig) {
-        const logStr = `HTTPClient Constructor: \n\tBASE_URL: ${baseURL}`;
+  constructor(baseURL: string, config?: AxiosRequestConfig) {
+    this.logger = new Logger("HTTPClient");
+    this.logger.debug(`Initializing HTTPClient with baseURL: ${baseURL}`);
 
-        Logger.setModuleName('HTTPClient');
-        Logger.debug(logStr);
+    this.instance = axios.create({
+      baseURL,
+      timeout: 15000,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      ...config,
+    });
 
-        this.instance = axios.create({
-            baseURL,
-            timeout: 10000,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            ...config,
-        });
+    this.setupInterceptors();
+  }
 
-        this.setupInterceptors();
-    }
+  /**
+   * Inject the token refresh logic.
+   * This is done via dependency injection to avoid circular dependencies
+   * between HTTPClient and the Auth API.
+   */
+  public setTokenRefreshHandler(
+    handler: (refreshToken: string) => Promise<TokenPair | null>,
+  ): void {
+    this.tokenRefreshHandler = handler;
+  }
 
-    private setupInterceptors(): void {
-        this.instance.interceptors.request.use(
-            async (config: InternalAxiosRequestConfig) => {
-                Logger.setModuleName('HTTPClient');
+  /**
+   * Inject the handler for when token refresh fails (e.g., redirect to login).
+   */
+  public setRefreshFailureHandler(handler: () => void): void {
+    this.refreshFailureHandler = handler;
+  }
 
-                const reqString = `${config.method} ${config.url} ${JSONService.stringify(config.data) ?? ""}`;
+  private setupInterceptors(): void {
+    // ========================================
+    // Request Interceptor
+    // ========================================
+    this.instance.interceptors.request.use(
+      async (config: InternalAxiosRequestConfig) => {
+        const tokens = await TokenService.getTokens();
 
-                Logger.debug(`Request: ${reqString}`);
+        if (tokens?.accessToken) {
+          config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+        }
 
-                try {
+        const reqString = `${config.method?.toUpperCase()} ${config.url}`;
+        this.logger.debug(`Request: ${reqString}`);
 
-                    const token = await SecureStorage.getItem(SecureStorageKey.BEARER_TOKEN);
+        return config;
+      },
+      (error: AxiosError) => {
+        this.logger.error(`Request Error: ${error.message}`);
+        return Promise.reject(error);
+      },
+    );
 
-                    if (token) {
-                        config.headers.Authorization = `Bearer ${token}`;
-                    }
-
-                } catch (error) {
-                    Logger.error(`Failed to load token: ${error}`);
-                }
-
-                return config;
-            },
-
-            (error: AxiosError) => {
-                Logger.error(`Request Error: ${JSON.stringify(error)}`);
-                return Promise.reject(error);
-            }
+    // ========================================
+    // Response Interceptor
+    // ========================================
+    this.instance.interceptors.response.use(
+      (response: AxiosResponse) => {
+        this.logger.debug(
+          `Response [${response.status}] ${response.config.url}: ${JSONService.stringify(response.data)}`,
         );
-
-        this.instance.interceptors.response.use(
-            (response: AxiosResponse) => {
-                Logger.setModuleName('HTTPClient');
-                Logger.debug(`Response: ${JSONService.stringify(response.data)}`);
-                return response;
-            },
-
-            async (error: AxiosError) => {
-                if (error.response) {
-
-                    if (error.response.status === 401) {
-                        // Absent token maybe?
-                        const token = await SecureStorage.getItem(SecureStorageKey.BEARER_TOKEN);
-
-                        if (!token) {
-                            return Promise.reject(error);
-                        }
-                    }
-
-                    if (error.response.status === 500) {
-                    }
-
-                    const apiError = error.response.data as APIError;
-
-                    const errorString = `
-                        Status: ${error.response.status}
-                        Code: ${error.code}
-                        Message: ${apiError.message}
-                        Errors: ${apiError.errors}
-                    `;
-
-                    Logger.error(errorString);
-
-                } else if (error.request) {
-                    Logger.error(`Request Error Request: ${JSON.stringify(error)}`);
-                } else {
-                    Logger.error(`Request Error: ${JSON.stringify(error)}`);
-                }
-                return Promise.reject(error);
-            }
-        );
-    }
-
-    public async get<T>(url: string, config?: AxiosRequestConfig): Promise<APIResponse<T>> {
-        const response = await this.instance.get<T>(url, config);
-
-        return this.handleResponse(response);
-    }
-
-    public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<APIResponse<T>> {
-        const response = await this.instance.post<T>(url, data, config);
-
-        return this.handleResponse(response);
-    }
-
-    public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<APIResponse<T>> {
-        const response = await this.instance.put<T>(url, data, config);
-
-        return this.handleResponse(response);
-    }
-
-    public async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<APIResponse<T>> {
-        const response = await this.instance.patch<T>(url, data, config);
-
-        return this.handleResponse(response);
-    }
-
-    public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<APIResponse<T>> {
-        const response = await this.instance.delete<T>(url, config);
-
-        return this.handleResponse(response);
-    }
-
-    // --- Response Formatting Helper ---
-
-    private handleResponse<T>(response: AxiosResponse<T>): APIResponse<T> {
-
-        return {
-            data: response.data,
-            status: response.status,
-            statusText: response.statusText,
+        return response;
+      },
+      async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & {
+          _retry?: boolean;
         };
-    }
+
+        // Handle 401 Unauthorized - Attempt Token Refresh
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          this.tokenRefreshHandler
+        ) {
+          if (this.isRefreshing) {
+            // Already refreshing, queue this request
+            return new Promise((resolve) => {
+              this.refreshSubscribers.push((token: string) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                resolve(this.instance(originalRequest));
+              });
+            });
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            const tokens = await TokenService.getTokens();
+            if (!tokens?.refreshToken) {
+              throw new Error("No refresh token available");
+            }
+
+            this.logger.debug("Attempting token refresh...");
+            const newTokens = await this.tokenRefreshHandler(
+              tokens.refreshToken,
+            );
+
+            if (!newTokens) {
+              throw new Error("Token refresh handler returned null");
+            }
+
+            this.onRefreshed(newTokens.accessToken);
+            this.isRefreshing = false;
+
+            originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+            return this.instance(originalRequest);
+          } catch (refreshError) {
+            this.isRefreshing = false;
+            this.refreshSubscribers = [];
+            this.logger.error(`Token refresh failed: ${refreshError}`);
+
+            if (this.refreshFailureHandler) {
+              this.refreshFailureHandler();
+            }
+
+            return Promise.reject(error);
+          }
+        }
+
+        // Log formatted error details
+        if (error.response) {
+          const errorData = error.response.data as ErrorModel;
+          this.logger.error(
+            `HTTP Error ${error.response.status}: ${errorData.detail ?? error.message}`,
+          );
+        } else {
+          this.logger.error(`Network/Unknown Error: ${error.message}`);
+        }
+
+        return Promise.reject(error);
+      },
+    );
+  }
+
+  private onRefreshed(token: string) {
+    this.refreshSubscribers.map((cb) => cb(token));
+    this.refreshSubscribers = [];
+  }
+
+  // ========================================
+  // HTTP Methods
+  // ========================================
+
+  public async get<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.get<ApiResponse<T>>(url, config);
+    return response.data;
+  }
+
+  public async post<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.post<ApiResponse<T>>(
+      url,
+      data,
+      config,
+    );
+    return response.data;
+  }
+
+  public async put<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.put<ApiResponse<T>>(url, data, config);
+    return response.data;
+  }
+
+  public async patch<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.patch<ApiResponse<T>>(
+      url,
+      data,
+      config,
+    );
+    return response.data;
+  }
+
+  public async delete<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+    const response = await this.instance.delete<ApiResponse<T>>(url, config);
+    return response.data;
+  }
 }

@@ -4,88 +4,92 @@ import { Channel } from "pusher-js/react-native";
 import { useRef } from "react";
 
 export function useRealtime() {
-    // Use useRef instead of useState to persist channels across rerenders
-    const channelsRef = useRef<Record<string, Channel>>({});
+  const logger = useRef(new Logger("useRealtime")).current;
+  // Use useRef instead of useState to persist channels across rerenders
+  const channelsRef = useRef<Record<string, Channel>>({});
 
-    Logger.debug(`UseRealtime Channels: `, channelsRef.current);
+  const subscribe = async (channelName: string) => {
+    logger.debug(`Subscribing to channel ${channelName}`);
 
-    const subscribe = async (channelName: string) => {
-        Logger.setModuleName("useRealtime");
-        Logger.debug(`Subscribing to channel ${channelName}`);
-
-        // Check if already subscribed
-        if (channelsRef.current[channelName]) {
-            Logger.debug(`Already subscribed to channel ${channelName}, returning existing channel`);
-            return channelsRef.current[channelName];
-        }
-
-        const pusher = await GetPusher();
-        const channel = pusher.subscribe(channelName);
-
-        channel.bind("pusher:subscription_succeeded", () => {
-            Logger.debug(`Subscribed to channel ${channelName}`);
-        });
-
-        channel.bind("pusher:subscription_error", (error: any) => {
-            Logger.error(`Subscription error for channel ${channelName}: ${error}`);
-        });
-
-        // Store in ref instead of state
-        channelsRef.current[channelName] = channel;
-
-        return channel;
+    // Check if already subscribed
+    if (channelsRef.current[channelName]) {
+      logger.debug(
+        `Already subscribed to channel ${channelName}, returning existing channel`,
+      );
+      return channelsRef.current[channelName];
     }
 
-    const unsubscribe = async (channelName: string, callback?: (data: any) => void) => {
-        Logger.setModuleName("useRealtime");
-        Logger.debug(`Unsubscribing from channel ${channelName}`);
+    const pusher = await GetPusher();
+    const channel = pusher.subscribe(channelName);
 
-        const channel = channelsRef.current[channelName];
+    channel.bind("pusher:subscription_succeeded", () => {
+      logger.debug(`Successfully subscribed to channel ${channelName}`);
+    });
 
-        if (!channel) {
-            Logger.error(`Channel ${channelName} not found`);
-            throw new Error(`Channel ${channelName} not found`);
-        }
+    channel.bind("pusher:subscription_error", (error: any) => {
+      logger.error(`Subscription error for channel ${channelName}:`, error);
+    });
 
-        channel.unsubscribe();
+    // Store in ref instead of state
+    channelsRef.current[channelName] = channel;
 
-        // Remove from ref
-        delete channelsRef.current[channelName];
+    return channel;
+  };
+
+  const unsubscribe = async (channelName: string) => {
+    logger.debug(`Unsubscribing from channel ${channelName}`);
+
+    const channel = channelsRef.current[channelName];
+
+    if (!channel) {
+      logger.warn(`Channel ${channelName} not found during unsubscribe`);
+      return;
     }
 
+    channel.unsubscribe();
 
-    const bind = (channelName: string, eventName: string, callback: (data: any) => void) => {
-        Logger.setModuleName("useRealtime");
-        Logger.debug(`Binding to channel ${channelName}`);
+    // Remove from ref
+    delete channelsRef.current[channelName];
+  };
 
-        const channel = channelsRef.current[channelName];
+  const bind = (
+    channelName: string,
+    eventName: string,
+    callback: (data: any) => void,
+  ) => {
+    logger.debug(`Binding event ${eventName} to channel ${channelName}`);
 
-        if (!channel) {
-            Logger.error(`Channel ${channelName} not found`);
-            throw new Error(`Channel ${channelName} not found`);
-        }
+    const channel = channelsRef.current[channelName];
 
-        channel.bind(eventName, callback);
+    if (!channel) {
+      logger.error(`Channel ${channelName} not found during bind`);
+      throw new Error(`Channel ${channelName} not found`);
     }
 
-    const unbind = (channelName: string, eventName: string, callback: (data: any) => void) => {
-        Logger.setModuleName("useRealtime");
-        Logger.debug(`Unbinding from channel ${channelName}`);
+    channel.bind(eventName, callback);
+  };
 
-        const channel = channelsRef.current[channelName];
+  const unbind = (
+    channelName: string,
+    eventName: string,
+    callback: (data: any) => void,
+  ) => {
+    logger.debug(`Unbinding event ${eventName} from channel ${channelName}`);
 
-        if (!channel) {
-            Logger.error(`Channel ${channelName} not found`);
-            throw new Error(`Channel ${channelName} not found`);
-        }
+    const channel = channelsRef.current[channelName];
 
-        channel.unbind(eventName, callback);
+    if (!channel) {
+      logger.error(`Channel ${channelName} not found during unbind`);
+      throw new Error(`Channel ${channelName} not found`);
     }
 
-    return {
-        subscribe,
-        unsubscribe,
-        bind,
-        unbind,
-    }
+    channel.unbind(eventName, callback);
+  };
+
+  return {
+    subscribe,
+    unsubscribe,
+    bind,
+    unbind,
+  };
 }

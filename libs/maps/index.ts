@@ -56,17 +56,16 @@ export interface Route {
 // --- MapService Class ---
 
 export class MapService {
+  private readonly logger = new Logger("MapService");
   private httpClient: HTTPClient;
   private apiKey: string;
 
   constructor(apiKey?: string) {
-    Logger.setModuleName("MapService");
-
     // Use provided API key or fall back to EnvService
     this.apiKey = apiKey || EnvService.GOOGLE_MAPS_API_KEY;
 
     if (!this.apiKey) {
-      Logger.error("Google Maps API key not provided");
+      this.logger.error("Google Maps API key not provided");
       throw new Error("Google Maps API key is required for MapService");
     }
 
@@ -75,15 +74,13 @@ export class MapService {
       timeout: 15000, // Longer timeout for external API
     });
 
-    Logger.debug("MapService initialized");
+    this.logger.debug("MapService initialized");
   }
 
   /**
    * Fetch directions between origin and destination
    */
   async getDirections(request: DirectionsRequest): Promise<Route> {
-    Logger.setModuleName("MapService");
-
     const {
       origin,
       destination,
@@ -97,15 +94,15 @@ export class MapService {
     const url = `/directions/json?origin=${originStr}&destination=${destinationStr}&mode=${mode}&alternatives=${alternatives}&key=${this.apiKey}`;
 
     try {
-      Logger.debug(
-        `Fetching directions from ${originStr} to ${destinationStr}`
+      this.logger.debug(
+        `Fetching directions from ${originStr} to ${destinationStr}`,
       );
 
       const response = await this.httpClient.get<GoogleDirectionsResponse>(url);
 
       if (response.data.status !== "OK") {
         const errorMsg = response.data.error_message || response.data.status;
-        Logger.error(`Google Directions API error: ${errorMsg}`);
+        this.logger.error(`Google Directions API error: ${errorMsg}`);
         throw new Error(`Directions API error: ${errorMsg}`);
       }
 
@@ -119,7 +116,9 @@ export class MapService {
       // Decode polyline into coordinates
       const coordinates = this.decodePolyline(route.overview_polyline.points);
 
-      Logger.debug(`Route found: ${leg.distance.text}, ${leg.duration.text}`);
+      this.logger.debug(
+        `Route found: ${leg.distance.text}, ${leg.duration.text}`,
+      );
 
       return {
         coordinates,
@@ -128,7 +127,7 @@ export class MapService {
         summary: route.summary,
       };
     } catch (error) {
-      Logger.error(`Failed to fetch directions: ${error}`);
+      this.logger.error(`Failed to fetch directions: ${error}`);
       throw error;
     }
   }
@@ -147,7 +146,7 @@ export class MapService {
         longitude,
       }));
     } catch (error) {
-      Logger.error(`Failed to decode polyline: ${error}`);
+      this.logger.error(`Failed to decode polyline: ${error}`);
       throw new Error("Failed to decode polyline");
     }
   }

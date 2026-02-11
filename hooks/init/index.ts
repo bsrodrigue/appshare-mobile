@@ -1,60 +1,99 @@
-import { useMe } from "@/modules/auth/hooks";
+import { useCallback, useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth";
-import { useCallback, useEffect } from "react";
 import { Logger } from "@/libs/log";
-import { JSONService } from "@/libs/json";
-import { GetPusher } from "@/libs/realtime/pusher";
 import EnvService from "@/libs/env";
 import { APIService } from "@/libs/api/client";
-import PushNotificationService from "@/libs/push-notification/init";
+import { TokenService, TokenPair } from "@/libs/token";
+import { me, refreshToken } from "@/modules/auth/api";
 
+const logger = new Logger("ApplicationStartup");
+
+/**
+ * useInitApp handles the application's boot sequence.
+ * 1. Validates environment variables.
+ * 2. Initializes the singleton APIService.
+ * 3. Injects token refresh and logout logic.
+ * 4. Checks if the user is already authenticated by trying to fetch their profile.
+ */
 export default function useInitApp() {
-  const { isAuthenticated, setUser, isVerifyingAuth, setIsVerifyingAuth } =
-    useAuthStore();
-  const { callMe, isLoading: isCallMeLoading } = useMe({});
+  const {
+    isAuthenticated,
+    setUser,
+    logout,
+    isVerifyingAuth,
+    setIsVerifyingAuth,
+  } = useAuthStore();
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const initApplication = useCallback(async () => {
-    Logger.setModuleName("ApplicationStartup");
-    Logger.debug("Initializing application");
+    logger.debug("Initializing application sequence...");
 
-    // Initialize and validate environment variables first
+    // 1. Initialize environment variables
     try {
       EnvService.init();
-      Logger.debug("✅ Environment variables validated successfully");
+      logger.debug("✅ Environment variables validated.");
     } catch (error) {
-      Logger.error(`Failed to initialize environment variables: ${error}`);
-      throw error; // Fail fast if env vars are missing
+      logger.error(`Failed to initialize environment: ${error}`);
+      // In a real app, you might show a fatal error screen here
     }
 
-    // Initialize other services
+    // 2. Initialize API Client
     APIService.initializeDefaultClient(EnvService.API_URL);
-    // await PushNotificationService.init();
 
-    // await GetPusher();
+    // 3. Inject token refresh handler (avoids circular dependency in APIService)
+    APIService.setTokenRefreshHandler(
+      async (token: string): Promise<TokenPair | null> => {
+        try {
+          const response = await refreshToken({ refresh_token: token });
+          const tokens: TokenPair = {
+            accessToken: response.tokens.access_token,
+            refreshToken: response.tokens.refresh_token,
+            accessTokenExpiresAt: response.tokens.access_token_expires_at,
+            refreshTokenExpiresAt: response.tokens.refresh_token_expires_at,
+          };
+          await TokenService.storeTokens(tokens);
+          return tokens;
+        } catch (error) {
+          logger.error(`Background token refresh failed: ${error}`);
+          return null;
+        }
+      },
+    );
 
+    // 4. Set up logout handler for session failure
+    APIService.setLogoutHandler(() => {
+      logger.warn("Session lost, logging out...");
+      logout();
+    });
+
+    // 5. Auth Check
     setIsVerifyingAuth(true);
-
-    const response = await callMe();
-
-    if (response === null) {
-      Logger.debug("User not authenticated");
+    try {
+      const tokens = await TokenService.getTokens();
+      if (tokens) {
+        logger.debug("Stored tokens found, fetching user profile...");
+        const user = await me();
+        setUser(user);
+        logger.debug(`User profile loaded: ${user.username}`);
+      } else {
+        logger.debug("No stored tokens found.");
+      }
+    } catch (error) {
+      logger.debug(
+        `Initial authentication check failed (likely session expired): ${error}`,
+      );
+      // No need to throw, user stays unauthenticated
+    } finally {
       setIsVerifyingAuth(false);
-
-      return;
+      setIsInitializing(false);
     }
-
-    const { user } = response.data;
-
-    setUser(user);
-    setIsVerifyingAuth(false);
-    Logger.debug(`User authenticated: ${JSONService.stringify(user)}`);
-  }, [callMe, setIsVerifyingAuth, setUser]);
-
-  const isLoading = isCallMeLoading || isVerifyingAuth;
+  }, [logout, setIsVerifyingAuth, setUser]);
 
   useEffect(() => {
     initApplication();
-  }, []);
+  }, [initApplication]);
+
+  const isLoading = isInitializing || isVerifyingAuth;
 
   return {
     isLoading,

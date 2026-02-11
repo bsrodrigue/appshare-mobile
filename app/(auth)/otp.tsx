@@ -11,13 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { theme } from "@/ui/theme";
 import { useResend, useVerify } from "@/modules/auth/hooks";
-import { SecureStorage } from "@/libs/secure-storage";
-import { SecureStorageKey } from "@/libs/secure-storage/keys";
+import { TokenService } from "@/libs/token";
 import { useAuthStore } from "@/store/auth";
 import { Logo } from "@/modules/shared/components/Logo";
 import { OTPInput } from "@/modules/auth/components/OTPInput";
 import { Button } from "@/modules/shared/components/Button";
-import { Toaster } from "@/libs/notification/toast";
+import Toast from "react-native-toast-message";
 
 export default function OTPScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
@@ -29,27 +28,42 @@ export default function OTPScreen() {
 
   const { callVerify, isLoading: isVerifyLoading } = useVerify({
     onSuccess(response) {
-      const { user, token } = response.data;
+      const { user, tokens } = response;
 
-      SecureStorage.setItem(SecureStorageKey.BEARER_TOKEN, token);
+      TokenService.storeTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: tokens.access_token_expires_at,
+        refreshTokenExpiresAt: tokens.refresh_token_expires_at,
+      });
+
       setUser(user);
     },
     onError(error) {
-      Toaster.error("Erreur", error);
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: error,
+      });
     },
   });
 
   const { callResend, isLoading: isResendLoading } = useResend({
     onSuccess(response) {
-      setRemainingAttempts(response.data.attempts_remaining);
+      setRemainingAttempts(response.attempts_remaining);
 
-      Toaster.success(
-        "Code renvoyé",
-        `Tentatives restantes: ${response.data.attempts_remaining}`,
-      );
+      Toast.show({
+        type: "success",
+        text1: "Code renvoyé",
+        text2: `Tentatives restantes: ${response.attempts_remaining}`,
+      });
     },
     onError(error) {
-      Toaster.error("Erreur", error);
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: error,
+      });
     },
   });
 
@@ -58,6 +72,14 @@ export default function OTPScreen() {
 
   const handleVerify = async () => {
     if (!isCodeValidLength) return;
+    if (!phone) {
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: "Numéro de téléphone manquant",
+      });
+      return;
+    }
 
     await callVerify({
       phone,
@@ -66,6 +88,7 @@ export default function OTPScreen() {
   };
 
   const handleResend = async () => {
+    if (!phone) return;
     await callResend({
       phone,
     });
@@ -85,43 +108,39 @@ export default function OTPScreen() {
             <Logo size="xl" />
           </View>
 
-          <>
-            <View style={styles.textContainer}>
-              <Text style={styles.title}>Verification du code OTP</Text>
-              <Text style={styles.subtitle}>
-                Entrez le code de validation envoyé{"\n"}
-                par SMS au{" "}
-                <Text style={styles.phoneNumber}>
-                  {phone || "votre numéro"}
-                </Text>
+          <View style={styles.textContainer}>
+            <Text style={styles.title}>Verification du code OTP</Text>
+            <Text style={styles.subtitle}>
+              Entrez le code de validation envoyé{"\n"}
+              par SMS au{" "}
+              <Text style={styles.phoneNumber}>{phone || "votre numéro"}</Text>
+            </Text>
+          </View>
+
+          <OTPInput value={otp} onChange={setOtp} length={6} />
+
+          <View style={styles.actions}>
+            <Button
+              title="Confirmer"
+              onPress={handleVerify}
+              isLoading={isLoading}
+              disabled={!isCodeValidLength}
+              style={styles.confirmButton}
+            />
+
+            {remainingAttempts !== null && (
+              <Text style={styles.attemptsText}>
+                Renvois restants: {remainingAttempts}
               </Text>
-            </View>
+            )}
 
-            <OTPInput value={otp} onChange={setOtp} length={6} />
-
-            <View style={styles.actions}>
-              <Button
-                title="Confirmer"
-                onPress={handleVerify}
-                isLoading={isLoading}
-                disabled={!isCodeValidLength}
-                style={styles.confirmButton}
-              />
-
-              {remainingAttempts !== null && (
-                <Text style={styles.attemptsText}>
-                  Renvois restants: {remainingAttempts}
-                </Text>
-              )}
-
-              <Button
-                title="Renvoyer SMS"
-                variant="secondary"
-                onPress={handleResend}
-                style={styles.resendButton}
-              />
-            </View>
-          </>
+            <Button
+              title="Renvoyer SMS"
+              variant="secondary"
+              onPress={handleResend}
+              style={styles.resendButton}
+            />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -167,6 +186,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     textAlign: "center",
     lineHeight: 20,
+    marginTop: theme.spacing.sm,
   },
   phoneNumber: {
     fontWeight: "bold",
@@ -178,7 +198,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
   },
   confirmButton: {
-    width: "60%", // Match the visual width in the image (not full width)
+    width: "60%",
     marginBottom: theme.spacing.sm,
   },
   resendButton: {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRealtime } from "../realtime";
 import { Logger } from "@/libs/log";
 import { Coords } from "@/types/geolocation";
@@ -19,8 +19,9 @@ interface TrackCourseProps {
 }
 
 export default function useTrackCourse({ courseId }: TrackCourseProps) {
+  const logger = useRef(new Logger("useTrackCourse")).current;
   const [deliverymanCoords, setDeliverymanCoords] = useState<Coords | null>(
-    null
+    null,
   );
   const { subscribe, unsubscribe, unbind } = useRealtime();
 
@@ -29,15 +30,14 @@ export default function useTrackCourse({ courseId }: TrackCourseProps) {
 
   const handleLocationUpdate = useCallback(
     (data: DeliverymanLocationUpdate) => {
-      Logger.setModuleName("useTrackCourse");
-      Logger.debug("Deliveryman location updated", data);
+      logger.debug("Deliveryman location updated", data);
 
       setDeliverymanCoords({
         latitude: data.location.lat,
         longitude: data.location.lng,
       });
     },
-    []
+    [logger],
   );
 
   useEffect(() => {
@@ -47,21 +47,21 @@ export default function useTrackCourse({ courseId }: TrackCourseProps) {
       try {
         const channel = await subscribe(channelName);
         channel.bind(eventName, handleLocationUpdate);
-        Logger.debug(`OrderMapRoute: Subscribed to ${channelName}`);
+        logger.debug(`Subscribed to ${channelName}`);
       } catch (error) {
-        Logger.error("OrderMapRoute: Failed to setup realtime", error);
+        logger.error(`Failed to setup realtime for ${channelName}`, error);
       }
     };
 
     setupRealtime();
-  }, [courseId, handleLocationUpdate, channelName]);
+  }, [courseId, handleLocationUpdate, channelName, logger]);
 
   useEffect(() => {
     return () => {
       unbind(channelName, eventName, () => {});
       unsubscribe(channelName);
     };
-  }, [channelName]);
+  }, [channelName, unsubscribe, unbind]);
 
   return {
     deliverymanCoords,

@@ -11,145 +11,36 @@ import { FileUploadButton } from "@/modules/shared/components/FileUploadButton";
 import { Checkbox } from "@/modules/shared/components/Checkbox";
 import { PhoneInput } from "@/modules/shared/components/PhoneInput";
 import { RolePicker } from "@/modules/shared/components/RolePicker";
-import { VehicleTypePicker } from "@/modules/shared/components/VehicleTypePicker";
 import { DatePicker } from "@/modules/shared/components/DatePicker";
 import { useFilePicker } from "@/hooks/useFileUpload";
 import { COUNTRY_CODE } from "@/constants/auth";
 import { theme } from "@/ui/theme";
 import { useRegister } from "@/modules/auth/hooks";
 import { AllowedRegistrationRolesSchema } from "@/types/role";
-import { Toaster } from "@/libs/notification/toast";
-import { prepareFileForUpload } from "@/utils/files";
+import Toast from "react-native-toast-message";
 import { Button } from "@/modules/shared/components/Button";
+import { TokenService } from "@/libs/token";
+import { useAuthStore } from "@/store/auth";
 
 const registerSchema = z
   .object({
-    // Common fields (required)
-    firstName: z
-      .string()
-      .min(1, "Prénom requis")
-      .max(100, "Maximum 100 caractères"),
-    lastName: z
-      .string()
-      .min(1, "Nom requis")
-      .max(100, "Maximum 100 caractères"),
+    firstName: z.string().min(1, "Prénom requis"),
+    lastName: z.string().min(1, "Nom requis"),
     birthDate: z.date(),
     email: z.string().email("Adresse email invalide"),
     role: AllowedRegistrationRolesSchema,
-    password: z.string().min(6, "Minimum 6 caractères"),
-    passwordConfirmation: z.string().min(6, "Minimum 6 caractères"),
+    password: z.string().min(8, "Minimum 8 caractères"),
+    passwordConfirmation: z.string().min(8, "Minimum 8 caractères"),
     phoneNumber: z.string().min(1, "Numéro de téléphone requis"),
-
-    // Optional common field
-    promoCode: z
-      .string()
-      .max(50, "Maximum 50 caractères")
-      .optional()
-      .nullable(),
-
-    // Legacy fields (not used in API but kept for UI)
-    documentUri: z.string().optional().nullable(),
-    logoUri: z.string().optional().nullable(),
-
-    // Seller fields
-    shopName: z
-      .string()
-      .max(255, "Maximum 255 caractères")
-      .optional()
-      .nullable(),
+    promoCode: z.string().optional().nullable(),
+    shopName: z.string().optional().nullable(),
     cnibRecto: z.string().optional().nullable(),
     cnibVerso: z.string().optional().nullable(),
-    businessRegister: z.string().optional().nullable(),
-
-    // Delivery man fields
-    vehicle_type: z.enum(["moto", "velo", "voiture"]).optional().nullable(),
-    license_plate: z
-      .string()
-      .max(20, "Maximum 20 caractères")
-      .optional()
-      .nullable(),
   })
-  .refine(
-    (data) => {
-      return data.password === data.passwordConfirmation;
-    },
-    {
-      message: "Les mots de passe ne correspondent pas",
-      path: ["passwordConfirmation"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "seller") {
-        return !!data.shopName && data.shopName.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Le nom de la boutique est obligatoire pour les vendeurs",
-      path: ["shopName"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "seller") {
-        return !!data.cnibRecto;
-      }
-      return true;
-    },
-    {
-      message: "Photo CNIB recto obligatoire pour les vendeurs",
-      path: ["cnibRecto"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "seller") {
-        return !!data.cnibVerso;
-      }
-      return true;
-    },
-    {
-      message: "Photo CNIB verso obligatoire pour les vendeurs",
-      path: ["cnibVerso"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "delivery_man") {
-        return !!data.vehicle_type;
-      }
-      return true;
-    },
-    {
-      message: "Le type de véhicule est obligatoire pour les livreurs",
-      path: ["vehicle_type"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "delivery_man") {
-        return !!data.cnibRecto;
-      }
-      return true;
-    },
-    {
-      message: "Photo CNIB recto obligatoire pour les livreurs",
-      path: ["cnibRecto"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (data.role === "delivery_man") {
-        return !!data.cnibVerso;
-      }
-      return true;
-    },
-    {
-      message: "Photo CNIB verso obligatoire pour les livreurs",
-      path: ["cnibVerso"],
-    },
-  );
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["passwordConfirmation"],
+  });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
@@ -162,15 +53,10 @@ const defaultRegisterValues: RegisterFormData = {
   phoneNumber: "",
   promoCode: null,
   role: "client",
-  documentUri: null,
-  logoUri: null,
   birthDate: new Date(),
   shopName: null,
   cnibRecto: null,
   cnibVerso: null,
-  businessRegister: null,
-  vehicle_type: null,
-  license_plate: null,
 };
 
 interface RegisterScreenProps {
@@ -181,7 +67,8 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState<string | undefined>();
   const router = useRouter();
-  const { files, loading, pickDocument, pickImage } = useFilePicker();
+  const { files, loading, pickImage } = useFilePicker();
+  const { setUser } = useAuthStore();
 
   const {
     control,
@@ -197,22 +84,30 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
 
   const selectedRole = watch("role");
 
-  const { callRegister: register, isLoading } = useRegister({
-    onSuccess() {
+  const { callRegister, isLoading } = useRegister({
+    onSuccess(response) {
+      const { user, tokens } = response;
+
+      TokenService.storeTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: tokens.access_token_expires_at,
+        refreshTokenExpiresAt: tokens.refresh_token_expires_at,
+      });
+
+      setUser(user);
+
       const phone = getValues("phoneNumber");
       router.replace(`/otp?phone=${encodeURIComponent(phone)}`);
     },
     onError(error) {
-      Toaster.error("Erreur", error);
+      Toast.show({ type: "error", text1: "Erreur", text2: error });
     },
   });
 
-  // Sync file URIs with form state
   useEffect(() => {
     Object.entries(files).forEach(([key, value]) => {
-      if (value) {
-        setValue(key as any, value);
-      }
+      if (value) setValue(key as any, value);
     });
   }, [files, setValue]);
 
@@ -229,28 +124,20 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
 
     const payload = {
       ...data,
-      cnibRecto: prepareFileForUpload(
-        data.cnibRecto ?? undefined,
-        "cnib_recto.jpg",
-      ),
-      cnibVerso: prepareFileForUpload(
-        data.cnibVerso ?? undefined,
-        "cnib_verso.jpg",
-      ),
-      businessRegister: prepareFileForUpload(
-        data.businessRegister ?? undefined,
-        "business_register.pdf",
-      ),
+      username: data.email.split("@")[0],
+      first_name: data.firstName,
+      last_name: data.lastName,
+      phone_number: data.phoneNumber,
     };
 
-    await register(payload as any);
+    await callRegister(payload as any);
   };
 
   return (
     <>
-      <Text style={styles.title}>Bienvenue chez elite!</Text>
+      <Text style={styles.title}>Bienvenue chez AppShare!</Text>
       <Text style={styles.subtitle}>
-        pour commencer, veuillez saisir vos informations
+        Pour commencer, veuillez saisir vos informations.
       </Text>
 
       <Controller
@@ -261,9 +148,7 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             placeholder="Prénom"
             value={value || ""}
             onChangeText={onChange}
-            autoCapitalize="words"
             disabled={isLoading}
-            autoComplete="name-given"
             error={errors.firstName?.message}
           />
         )}
@@ -277,9 +162,7 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             placeholder="Nom"
             value={value || ""}
             onChangeText={onChange}
-            autoCapitalize="words"
             disabled={isLoading}
-            autoComplete="name-family"
             error={errors.lastName?.message}
           />
         )}
@@ -293,7 +176,6 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             placeholder="Date de naissance"
             value={value}
             onChange={onChange}
-            maximumDate={new Date()}
             disabled={isLoading}
             error={errors.birthDate?.message}
           />
@@ -309,8 +191,6 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             value={value || ""}
             onChangeText={onChange}
             keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
             disabled={isLoading}
             error={errors.email?.message}
           />
@@ -332,85 +212,23 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
       />
 
       {selectedRole === "seller" && (
-        <>
-          <Controller
-            control={control}
-            name="shopName"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                placeholder="Nom de la boutique"
-                value={value ?? ""}
-                onChangeText={onChange}
-                disabled={isLoading}
-                error={errors.shopName?.message}
-              />
-            )}
-          />
-
-          <FileUploadButton
-            onPress={() => pickImage("cnibRecto")}
-            hasFile={!!watch("cnibRecto")}
-            placeholder="Photo CNIB recto *"
-            uploadedText="CNIB recto chargé"
-            disabled={isLoading}
-            loading={loading.cnibRecto}
-            error={errors.cnibRecto?.message}
-          />
-
-          <FileUploadButton
-            onPress={() => pickImage("cnibVerso")}
-            hasFile={!!watch("cnibVerso")}
-            placeholder="Photo CNIB verso *"
-            uploadedText="CNIB verso chargé"
-            disabled={isLoading}
-            loading={loading.cnibVerso}
-            error={errors.cnibVerso?.message}
-          />
-
-          <FileUploadButton
-            onPress={() => pickDocument("businessRegister")}
-            hasFile={!!watch("businessRegister")}
-            placeholder="Registre de commerce (Optionnel)"
-            uploadedText="Registre de commerce chargé"
-            disabled={isLoading}
-            loading={loading.businessRegister}
-            error={errors.businessRegister?.message}
-          />
-        </>
+        <Controller
+          control={control}
+          name="shopName"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              placeholder="Nom de la boutique"
+              value={value ?? ""}
+              onChangeText={onChange}
+              disabled={isLoading}
+              error={errors.shopName?.message}
+            />
+          )}
+        />
       )}
 
-      {selectedRole === "delivery_man" && (
+      {(selectedRole === "seller" || selectedRole === "delivery_man") && (
         <>
-          <Controller
-            control={control}
-            name="vehicle_type"
-            render={({ field: { onChange, value } }) => (
-              <VehicleTypePicker
-                name="vehicle_type"
-                value={value ?? undefined}
-                onValueChange={onChange}
-                disabled={isLoading}
-                error={errors.vehicle_type?.message}
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="license_plate"
-            render={({ field: { onChange, value } }) => (
-              <Input
-                placeholder="Plaque d'immatriculation (Optionnel)"
-                value={value ?? ""}
-                onChangeText={onChange}
-                autoCapitalize="characters"
-                disabled={isLoading}
-                maxLength={20}
-                error={errors.license_plate?.message}
-              />
-            )}
-          />
-
           <FileUploadButton
             onPress={() => pickImage("cnibRecto")}
             hasFile={!!watch("cnibRecto")}
@@ -432,30 +250,6 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
           />
         </>
       )}
-
-      {!selectedRole || selectedRole !== "seller" ? (
-        <>
-          <FileUploadButton
-            onPress={() => pickDocument("documentUri")}
-            hasFile={!!watch("documentUri")}
-            placeholder="CNIB ou PASSPORT"
-            uploadedText="Document uploaded"
-            disabled={isLoading}
-            loading={loading.documentUri}
-            error={errors.documentUri?.message}
-          />
-
-          <FileUploadButton
-            onPress={() => pickImage("logoUri")}
-            hasFile={!!watch("logoUri")}
-            placeholder="LOGO ou PHOTO DE PROFIL"
-            uploadedText="Logo uploaded"
-            disabled={isLoading}
-            loading={loading.logoUri}
-            error={errors.logoUri?.message}
-          />
-        </>
-      ) : null}
 
       <Controller
         control={control}
@@ -465,9 +259,7 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             placeholder="Mot de passe"
             value={value || ""}
             onChangeText={onChange}
-            autoCapitalize="none"
             disabled={isLoading}
-            autoComplete="password-new"
             error={errors.password?.message}
           />
         )}
@@ -481,24 +273,8 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
             placeholder="Confirmation du mot de passe"
             value={value || ""}
             onChangeText={onChange}
-            autoCapitalize="none"
             disabled={isLoading}
-            autoComplete="password-new"
             error={errors.passwordConfirmation?.message}
-          />
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="promoCode"
-        render={({ field: { onChange, value } }) => (
-          <Input
-            placeholder="CODE PROMO"
-            value={value || ""}
-            onChangeText={onChange}
-            autoCapitalize="characters"
-            disabled={isLoading}
           />
         )}
       />
@@ -520,24 +296,21 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
       <Checkbox
         checked={acceptedTerms}
         onPress={toggleTerms}
-        label="j'accepte les"
-        linkText="conditions générales d'utilisation"
+        label="J'accepte les conditions"
         disabled={isLoading}
         error={termsError}
       />
 
       <Button
-        title="SUIVANT"
+        title="S'INSCRIRE"
         onPress={handleSubmit(onSubmit)}
-        disabled={isLoading}
+        isLoading={isLoading}
       />
 
       <TouchableOpacity
         onPress={onToggleMode}
         disabled={isLoading}
         style={styles.toggleButton}
-        accessibilityRole="button"
-        accessibilityLabel="Switch to sign in"
       >
         <Text style={styles.toggleText}>Déjà un compte? Connectez-vous</Text>
       </TouchableOpacity>
@@ -557,22 +330,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     marginBottom: theme.spacing.xl,
     lineHeight: 24,
-  },
-  button: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.sm,
-    padding: 18,
-    alignItems: "center",
-    marginTop: theme.spacing.sm,
-  },
-  buttonDisabled: {
-    backgroundColor: theme.colors.disabled,
-  },
-  buttonText: {
-    color: theme.colors.textWhite,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.bold,
-    letterSpacing: 1,
   },
   toggleButton: {
     marginTop: theme.spacing.lg,

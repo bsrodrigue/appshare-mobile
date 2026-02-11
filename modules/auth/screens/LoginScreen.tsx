@@ -5,11 +5,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { theme } from "@/ui/theme";
-import { Toaster } from "@/libs/notification/toast";
+import Toast from "react-native-toast-message";
 import { useLogin } from "@/modules/auth/hooks";
-import { SecureStorage } from "@/libs/secure-storage";
+import { TokenService } from "@/libs/token";
 import { useAuthStore } from "@/store/auth";
-import { SecureStorageKey } from "@/libs/secure-storage/keys";
 import { Input } from "@/modules/shared/components/Input";
 import { PasswordInput } from "@/modules/auth/components/PasswordInput";
 import { Button } from "@/modules/shared/components/Button";
@@ -19,14 +18,14 @@ interface LoginScreenProps {
 }
 
 const loginSchema = z.object({
-  login: z.string().min(1, "Login requis"),
+  email: z.string().min(1, "Email ou nom d'utilisateur requis"),
   password: z.string().min(1, "Mot de passe requis"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const defaultLoginValues: LoginFormData = {
-  login: "",
+  email: "",
   password: "",
 };
 
@@ -35,14 +34,24 @@ const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
 
   const { callLogin, isLoading } = useLogin({
     onSuccess(response) {
-      const { user, token } = response.data;
+      const { user, tokens } = response;
 
-      SecureStorage.setItem(SecureStorageKey.BEARER_TOKEN, token);
+      TokenService.storeTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        accessTokenExpiresAt: tokens.access_token_expires_at,
+        refreshTokenExpiresAt: tokens.refresh_token_expires_at,
+      });
+
       setUser(user);
     },
 
     onError(error) {
-      Toaster.error("Erreur", error);
+      Toast.show({
+        type: "error",
+        text1: "Erreur",
+        text2: error,
+      });
     },
   });
 
@@ -61,24 +70,24 @@ const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
 
   return (
     <>
-      <Text style={styles.title}>Bienvenue chez elite!</Text>
+      <Text style={styles.title}>Bienvenue chez AppShare!</Text>
       <Text style={styles.subtitle}>
         Pour continuer, veuillez saisir vos informations.
       </Text>
 
       <Controller
         control={control}
-        name="login"
+        name="email"
         render={({ field: { onChange, value } }) => (
           <Input
-            placeholder="Login"
+            placeholder="Email ou Username"
             value={value}
             onChangeText={onChange}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
             disabled={isLoading}
-            error={errors.login?.message}
+            error={errors.email?.message}
           />
         )}
       />
@@ -100,7 +109,7 @@ const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
       />
 
       <Button
-        title="SUIVANT"
+        title="SE CONNECTER"
         isLoading={isLoading}
         onPress={handleSubmit(onSubmit)}
       />
@@ -128,22 +137,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     marginBottom: theme.spacing.xl,
     lineHeight: 24,
-  },
-  button: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.sm,
-    padding: 18,
-    alignItems: "center",
-    marginTop: theme.spacing.sm,
-  },
-  buttonDisabled: {
-    backgroundColor: theme.colors.disabled,
-  },
-  buttonText: {
-    color: theme.colors.textWhite,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.bold,
-    letterSpacing: 1,
   },
   toggleButton: {
     marginTop: theme.spacing.lg,

@@ -4,12 +4,11 @@ import { SecureStorage } from "../secure-storage";
 import { SecureStorageKey } from "../secure-storage/keys";
 import EnvService from "../env";
 
+const logger = new Logger("Pusher");
 let pusher: Pusher | null = null;
 
 const _init = async () => {
   try {
-    Logger.setModuleName("Pusher");
-
     const token = await SecureStorage.getItem(SecureStorageKey.BEARER_TOKEN);
 
     const pusherConfig: Options = {
@@ -37,12 +36,12 @@ const _init = async () => {
     // Create a new Pusher instance
     pusher = new Pusher(EnvService.PUSHER_KEY, pusherConfig);
 
-    Logger.debug(`Created new pusher instance`, pusher);
+    logger.debug(`Created new pusher instance`, pusher);
 
     // Connect (pusher-js auto-connects on subscribe, but explicit connect is fine)
     pusher.connect();
   } catch (e) {
-    Logger.error(`Pusher init error: ${e}`);
+    logger.error(`Pusher init error: ${e}`);
   }
 };
 
@@ -55,6 +54,6 @@ export async function GetPusher(): Promise<Pusher> {
     throw new Error("Pusher is not initialized");
   }
 
-  Logger.debug(`Pusher state: ${pusher.connection.state}`);
+  logger.debug(`Pusher state: ${pusher.connection.state}`);
   return pusher;
 }
