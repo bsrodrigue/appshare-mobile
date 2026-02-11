@@ -15,21 +15,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Toaster } from "@/libs/notification/toast";
 
 import {
-  useListApplications,
-  useCreateApplication,
-  useUpdateApplication,
-  useDeleteApplication,
-} from "@/modules/applications/hooks";
-import { ApplicationCard } from "@/modules/applications/components/ApplicationCard";
-import { ApplicationForm } from "@/modules/applications/components/ApplicationForm";
-import {
-  ApplicationResponse,
-  CreateApplicationParams,
-} from "@/modules/applications/types";
+  useListReleases,
+  useCreateRelease,
+  useUpdateRelease,
+  useDeleteRelease,
+  usePromoteRelease,
+} from "@/modules/releases/hooks";
+import { ReleaseCard, ReleaseForm } from "@/modules/releases";
+import { ReleaseResponse, CreateReleaseInput } from "@/modules/releases/types";
+import { useGetApplication } from "@/modules/applications/hooks";
+import { ApplicationResponse } from "@/modules/applications/types";
 import { Button } from "@/modules/shared/components/Button";
 
-export default function ProjectDetailScreen() {
-  const { id: projectId, title: projectTitle } = useLocalSearchParams<{
+export default function ApplicationDetailScreen() {
+  const { id: appId, title: initialTitle } = useLocalSearchParams<{
     id: string;
     title: string;
   }>();
@@ -38,84 +37,129 @@ export default function ProjectDetailScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [editingApp, setEditingApp] = useState<ApplicationResponse | null>(
+  const [editingRelease, setEditingRelease] = useState<ReleaseResponse | null>(
     null,
   );
-  const [applications, setApplications] = useState<ApplicationResponse[]>([]);
+  const [releases, setReleases] = useState<ReleaseResponse[]>([]);
+  const [application, setApplication] = useState<ApplicationResponse | null>(
+    null,
+  );
 
-  const { callListApplications, isLoading: isFetching } = useListApplications({
-    onSuccess: (data) => setApplications(data),
+  // Fetch Application Details
+  const { callGetApplication } = useGetApplication({
+    onSuccess: (data) => setApplication(data),
+    onError: (err) =>
+      Toaster.error("Erreur", "Impossible de charger l'application"),
+  });
+
+  // List Releases
+  const { callListReleases, isLoading: isFetching } = useListReleases({
+    onSuccess: (data) => setReleases(data),
     onError: (err) => Toaster.error("Erreur", err),
   });
 
-  const fetchApplications = useCallback(() => {
-    if (projectId) {
-      callListApplications({ project_id: projectId });
+  const fetchData = useCallback(() => {
+    if (appId) {
+      callGetApplication({ id: appId });
+      callListReleases({ app_id: appId });
     }
-  }, [projectId, callListApplications]);
+  }, [appId, callGetApplication, callListReleases]);
 
   useEffect(() => {
-    fetchApplications();
-  }, [fetchApplications]);
+    fetchData();
+  }, [fetchData]);
 
-  const { callCreateApplication, isLoading: isCreating } = useCreateApplication(
-    {
-      onSuccess: () => {
-        Toaster.success("Succès", "Application créée avec succès");
-        setIsFormVisible(false);
-        fetchApplications();
-      },
-      onError: (err) => Toaster.error("Erreur", err),
-    },
-  );
-
-  const { callUpdateApplication, isLoading: isUpdating } = useUpdateApplication(
-    {
-      onSuccess: () => {
-        Toaster.success("Succès", "Application mise à jour avec succès");
-        setIsFormVisible(false);
-        setEditingApp(null);
-        fetchApplications();
-      },
-      onError: (err) => Toaster.error("Erreur", err),
-    },
-  );
-
-  const { callDeleteApplication } = useDeleteApplication({
+  // Create Release
+  const { callCreateRelease, isLoading: isCreating } = useCreateRelease({
     onSuccess: () => {
-      Toaster.success("Succès", "Application supprimée");
-      fetchApplications();
+      Toaster.success("Succès", "Release créée avec succès");
+      setIsFormVisible(false);
+      fetchData();
     },
     onError: (err) => Toaster.error("Erreur", err),
   });
 
-  const handleSubmit = (data: CreateApplicationParams) => {
-    if (editingApp) {
-      callUpdateApplication({
-        id: editingApp.id,
-        title: data.title,
-        description: data.description,
+  // Update Release
+  const { callUpdateRelease, isLoading: isUpdating } = useUpdateRelease({
+    onSuccess: () => {
+      Toaster.success("Succès", "Release mise à jour");
+      setIsFormVisible(false);
+      setEditingRelease(null);
+      fetchData();
+    },
+    onError: (err) => Toaster.error("Erreur", err),
+  });
+
+  // Delete Release
+  const { callDeleteRelease } = useDeleteRelease({
+    onSuccess: () => {
+      Toaster.success("Succès", "Release supprimée");
+      fetchData();
+    },
+    onError: (err) => Toaster.error("Erreur", err),
+  });
+
+  // Promote Release
+  const { callPromoteRelease } = usePromoteRelease({
+    onSuccess: () => {
+      Toaster.success("Succès", "Release promue avec succès");
+      fetchData();
+    },
+    onError: (err) => Toaster.error("Erreur", err),
+  });
+
+  const handleSubmit = (data: CreateReleaseInput) => {
+    if (editingRelease) {
+      callUpdateRelease({
+        id: editingRelease.id,
+        body: {
+          title: data.title,
+          release_note: data.release_note,
+        },
       });
     } else {
-      callCreateApplication(data);
+      callCreateRelease({
+        app_id: appId as string,
+        body: data,
+      });
     }
   };
 
-  const handleEdit = (app: ApplicationResponse) => {
-    setEditingApp(app);
+  const handleEdit = (release: ReleaseResponse) => {
+    setEditingRelease(release);
     setIsFormVisible(true);
   };
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      "Supprimer l'application",
-      "Êtes-vous sûr de vouloir supprimer cette application ?",
+      "Supprimer la release",
+      "Êtes-vous sûr de vouloir supprimer cette release ?",
       [
         { text: "Annuler", style: "cancel" },
         {
           text: "Supprimer",
           style: "destructive",
-          onPress: () => callDeleteApplication({ id }),
+          onPress: () => callDeleteRelease({ id }),
+        },
+      ],
+    );
+  };
+
+  const handlePromote = (release: ReleaseResponse) => {
+    const nextEnv =
+      release.environment === "development" ? "staging" : "production";
+    Alert.alert(
+      "Promouvoir la release",
+      `Voulez-vous promouvoir cette release vers l'environnement ${nextEnv} ?`,
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Promouvoir",
+          onPress: () =>
+            callPromoteRelease({
+              id: release.id,
+              body: { environment: nextEnv },
+            }),
         },
       ],
     );
@@ -126,7 +170,7 @@ export default function ProjectDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: projectTitle || "Détails du projet",
+          title: application?.title || initialTitle || "Détails de l'app",
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
           headerLeft: () => (
@@ -146,32 +190,29 @@ export default function ProjectDetailScreen() {
 
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>{projectTitle || "Projet"}</Text>
-          <Text style={styles.subtitle}>Liste des applications</Text>
+          <Text style={styles.title}>
+            {application?.title || initialTitle || "Application"}
+          </Text>
+          <Text style={styles.subtitle}>Releases & Versions</Text>
         </View>
       </View>
 
       <FlatList
-        data={applications}
+        data={releases}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <ApplicationCard
-            application={item}
+          <ReleaseCard
+            release={item}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onPress={(app) =>
-              router.push({
-                pathname: "/(protected)/applications/[id]",
-                params: { id: app.id, title: app.title },
-              })
-            }
+            onPromote={handlePromote}
           />
         )}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
-            onRefresh={fetchApplications}
+            onRefresh={fetchData}
             tintColor={theme.colors.primary}
           />
         }
@@ -179,13 +220,13 @@ export default function ProjectDetailScreen() {
           !isFetching ? (
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons
-                name="cellphone-off"
+                name="rocket-launch-outline"
                 size={64}
                 color={theme.colors.textLight}
               />
-              <Text style={styles.emptyText}>Aucune application trouvée</Text>
+              <Text style={styles.emptyText}>Aucune release trouvée</Text>
               <Button
-                title="Ajouter une application"
+                title="Créer la première release"
                 onPress={() => setIsFormVisible(true)}
                 style={styles.emptyButton}
               />
@@ -197,23 +238,22 @@ export default function ProjectDetailScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          setEditingApp(null);
+          setEditingRelease(null);
           setIsFormVisible(true);
         }}
       >
         <MaterialCommunityIcons name="plus" size={32} color="white" />
       </TouchableOpacity>
 
-      <ApplicationForm
+      <ReleaseForm
         visible={isFormVisible}
         onClose={() => {
           setIsFormVisible(false);
-          setEditingApp(null);
+          setEditingRelease(null);
         }}
         onSubmit={handleSubmit}
-        initialData={editingApp}
+        initialData={editingRelease}
         isLoading={isCreating || isUpdating}
-        projectId={projectId as string}
       />
     </SafeAreaView>
   );
