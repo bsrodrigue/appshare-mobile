@@ -1,3 +1,5 @@
+import { ColorSchemeName, useColorScheme } from "react-native";
+
 const palette = {
   // Base colors
   darkBlue: "#10131f",
@@ -15,39 +17,61 @@ const palette = {
   gray500: "#666",
   gray800: "#333",
 
+  // Dark specific
+  darkSurface: "rgba(255,255,255,0.08)",
+  darkCard: "rgba(255,255,255,0.05)",
+  darkBorder: "rgba(255,255,255,0.1)",
+
+  // Light specific
+  lightSurface: "#f9f9f9",
+  lightCard: "#ffffff",
+  lightBorder: "#e0e0e0",
+
   // Specific UI colors
   splashBlue: "#4FA4F4",
 };
 
-export const theme = {
-  colors: {
-    // Backgrounds
-    background: palette.darkBlue,
-    whiteBackground: palette.white,
-    surface: "rgba(255,255,255,0.08)",
-    inputBackground: palette.gray200,
-    cardBackground: "rgba(255,255,255,0.05)",
+const lightColors = {
+  background: palette.white,
+  surface: palette.lightSurface,
+  inputBackground: palette.gray100,
+  cardBackground: palette.lightCard,
+  text: palette.gray800,
+  textLight: palette.gray500,
+  textWhite: palette.white,
+  textInverse: palette.white,
+  placeholder: palette.gray400,
+  primary: palette.lightBlue,
+  accent: palette.orange,
+  splashBackground: palette.splashBlue,
+  error: palette.red,
+  disabled: palette.gray300,
+  border: palette.lightBorder,
+  otpBox: palette.gray200,
+  otpBoxActive: palette.lightBlue,
+};
 
-    // Text
-    text: palette.gray800,
-    textLight: palette.gray300,
-    textWhite: palette.white,
-    placeholder: palette.gray400,
+const darkColors = {
+  background: palette.darkBlue,
+  surface: palette.darkSurface,
+  inputBackground: palette.gray800,
+  cardBackground: palette.darkCard,
+  text: palette.white,
+  textLight: palette.gray300,
+  textWhite: palette.white,
+  textInverse: palette.gray800,
+  placeholder: palette.gray500,
+  primary: palette.lightBlue,
+  accent: palette.orange,
+  splashBackground: palette.splashBlue,
+  error: palette.red,
+  disabled: palette.gray500,
+  border: palette.darkBorder,
+  otpBox: "#2a2d3a",
+  otpBoxActive: palette.white,
+};
 
-    // Brand
-    primary: palette.lightBlue,
-    accent: palette.orange,
-    splashBackground: palette.splashBlue,
-
-    // Feedback
-    error: palette.red,
-    disabled: palette.gray500,
-
-    // UI Elements
-    border: "rgba(255,255,255,0.1)",
-    otpBox: "#E0E0E0",
-    otpBoxActive: palette.white,
-  },
+const sharedTheme = {
   spacing: {
     xs: 4,
     sm: 8,
@@ -77,49 +101,71 @@ export const theme = {
     medium: "600" as const,
     bold: "700" as const,
   },
-  // Font Families - centralized here for easy swapping
   fontFamily: {
-    regular: "System", // Swap with 'Inter-Regular' or similar
-    medium: "System", // Swap with 'Inter-Medium'
-    bold: "System", // Swap with 'Inter-Bold'
-    heading: "System", // Swap with 'Outfit-Bold' or similar
+    regular: "System",
+    medium: "System",
+    bold: "System",
+    heading: "System",
   },
 };
 
-// Helper for consistent text styles
-export const typography = {
-  h1: {
-    fontSize: theme.fontSize.xxl,
-    fontFamily: theme.fontFamily.heading,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.textWhite,
-  },
-  h2: {
-    fontSize: theme.fontSize.xl,
-    fontFamily: theme.fontFamily.heading,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.textWhite,
-  },
-  h3: {
-    fontSize: theme.fontSize.lg,
-    fontFamily: theme.fontFamily.heading,
-    fontWeight: theme.fontWeight.medium,
-    color: theme.colors.textWhite,
-  },
-  body: {
-    fontSize: theme.fontSize.base,
-    fontFamily: theme.fontFamily.regular,
-    color: theme.colors.text,
-  },
-  bodySmall: {
-    fontSize: theme.fontSize.sm,
-    fontFamily: theme.fontFamily.regular,
-    color: theme.colors.textLight,
-  },
-  button: {
-    fontSize: theme.fontSize.base,
-    fontFamily: theme.fontFamily.medium,
-    fontWeight: theme.fontWeight.bold,
-    letterSpacing: 1,
+export const ThemeService = {
+  getTheme: (scheme: ColorSchemeName) => {
+    const isDark = scheme === "dark";
+    const colors = isDark ? darkColors : lightColors;
+
+    return {
+      ...sharedTheme,
+      colors,
+      isDark,
+    };
   },
 };
+
+// Default theme for non-hook usage (Server side or background)
+export const theme = ThemeService.getTheme("dark");
+
+export const useTheme = () => {
+  const scheme = useColorScheme();
+  return ThemeService.getTheme(scheme);
+};
+
+export type Theme = ReturnType<typeof ThemeService.getTheme>;
+
+// Helper for consistent text styles
+export const getTypography = (currentTheme: Theme) => ({
+  h1: {
+    fontSize: currentTheme.fontSize.xxl,
+    fontFamily: currentTheme.fontFamily.heading,
+    fontWeight: currentTheme.fontWeight.bold,
+    color: currentTheme.colors.text,
+  },
+  h2: {
+    fontSize: currentTheme.fontSize.xl,
+    fontFamily: currentTheme.fontFamily.heading,
+    fontWeight: currentTheme.fontWeight.bold,
+    color: currentTheme.colors.text,
+  },
+  h3: {
+    fontSize: currentTheme.fontSize.lg,
+    fontFamily: currentTheme.fontFamily.heading,
+    fontWeight: currentTheme.fontWeight.medium,
+    color: currentTheme.colors.text,
+  },
+  body: {
+    fontSize: currentTheme.fontSize.base,
+    fontFamily: currentTheme.fontFamily.regular,
+    color: currentTheme.colors.text,
+  },
+  bodySmall: {
+    fontSize: currentTheme.fontSize.sm,
+    fontFamily: currentTheme.fontFamily.regular,
+    color: currentTheme.colors.textLight,
+  },
+  button: {
+    fontSize: currentTheme.fontSize.base,
+    fontFamily: currentTheme.fontFamily.medium,
+    fontWeight: currentTheme.fontWeight.bold,
+    letterSpacing: 1,
+  },
+});

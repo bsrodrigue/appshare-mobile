@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { theme } from "@/ui/theme";
+import { useTheme, type Theme } from "@/ui/theme";
 import { useLogin } from "@/modules/auth/hooks";
 import { TokenService } from "@/libs/token";
 import { useAuthStore } from "@/store/auth";
@@ -30,6 +30,8 @@ const defaultLoginValues: LoginFormData = {
 };
 
 const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { setUser } = useAuthStore();
 
   const { callLogin, isLoading } = useLogin({
@@ -121,27 +123,28 @@ const LoginScreen = ({ onToggleMode }: LoginScreenProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.medium,
-    color: theme.colors.textWhite,
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.textLight,
-    marginBottom: theme.spacing.xl,
-    lineHeight: 24,
-  },
-  toggleButton: {
-    marginTop: theme.spacing.lg,
-    alignItems: "center",
-  },
-  toggleText: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.primary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    title: {
+      fontSize: theme.fontSize.lg,
+      fontWeight: theme.fontWeight.medium,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.fontSize.base,
+      color: theme.colors.textLight,
+      marginBottom: theme.spacing.xl,
+      lineHeight: 24,
+    },
+    toggleButton: {
+      marginTop: theme.spacing.lg,
+      alignItems: "center",
+    },
+    toggleText: {
+      fontSize: theme.fontSize.sm,
+      color: theme.colors.primary,
+    },
+  });
 
 export default LoginScreen;

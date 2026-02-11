@@ -1,7 +1,11 @@
-import { theme } from "@/ui/theme";
+import { useTheme, type Theme } from "@/ui/theme";
+import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function EliteLogo() {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <View style={styles.header}>
       <Text style={styles.logo}>AppShare</Text>
@@ -10,24 +14,25 @@ export default function EliteLogo() {
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: theme.spacing.xl,
-  },
-  logo: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: "bold",
-    color: theme.colors.textWhite,
-    letterSpacing: -2,
-  },
-  logoDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: theme.colors.accent,
-    marginLeft: -8,
-    marginTop: 8,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: theme.spacing.xl,
+    },
+    logo: {
+      fontSize: theme.fontSize.xxl,
+      fontWeight: "bold",
+      color: theme.colors.text,
+      letterSpacing: -2,
+    },
+    logoDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: theme.colors.accent,
+      marginLeft: -4,
+      marginTop: 8,
+    },
+  });

@@ -3,12 +3,13 @@ import { useForm, Controller } from "react-hook-form";
 import { useRouter } from "expo-router";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo } from "react";
 
 import { Input } from "@/modules/shared/components/Input";
 import { PasswordInput } from "@/modules/auth/components/PasswordInput";
 import { PhoneInput } from "@/modules/shared/components/PhoneInput";
 import { COUNTRY_CODE } from "@/constants/auth";
-import { theme } from "@/ui/theme";
+import { useTheme, type Theme } from "@/ui/theme";
 import { useRegister } from "@/modules/auth/hooks";
 import { Button } from "@/modules/shared/components/Button";
 import { TokenService } from "@/libs/token";
@@ -23,7 +24,7 @@ const registerSchema = z
       .string()
       .min(3, "Le nom d'utilisateur doit contenir au moins 3 caractères")
       .max(30),
-    email: z.email("Adresse email invalide"),
+    email: z.string().email("Adresse email invalide"),
     password: z.string().min(8, "Minimum 8 caractères"),
     passwordConfirmation: z.string().min(8, "Minimum 8 caractères"),
     phoneNumber: z.string().min(1, "Numéro de téléphone requis"),
@@ -50,6 +51,8 @@ interface RegisterScreenProps {
 }
 
 const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { setUser } = useAuthStore();
 
@@ -221,27 +224,28 @@ const RegisterScreen = ({ onToggleMode }: RegisterScreenProps) => {
   );
 };
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.medium,
-    color: theme.colors.textWhite,
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.textLight,
-    marginBottom: theme.spacing.xl,
-    lineHeight: 24,
-  },
-  toggleButton: {
-    marginTop: theme.spacing.lg,
-    alignItems: "center",
-  },
-  toggleText: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.primary,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    title: {
+      fontSize: theme.fontSize.lg,
+      fontWeight: theme.fontWeight.medium,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      fontSize: theme.fontSize.base,
+      color: theme.colors.textLight,
+      marginBottom: theme.spacing.xl,
+      lineHeight: 24,
+    },
+    toggleButton: {
+      marginTop: theme.spacing.lg,
+      alignItems: "center",
+    },
+    toggleText: {
+      fontSize: theme.fontSize.sm,
+      color: theme.colors.primary,
+    },
+  });
 
 export default RegisterScreen;

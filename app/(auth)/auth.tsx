@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   StyleSheet,
   KeyboardAvoidingView,
@@ -7,12 +7,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { theme } from "@/ui/theme";
+import { useTheme, type Theme } from "@/ui/theme";
 import LoginScreen from "@/modules/auth/screens/LoginScreen";
 import RegisterScreen from "@/modules/auth/screens/RegisterScreen";
 import AppLogo from "@/modules/shared/components/EliteLogo";
 
 export default function AuthScreen() {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [isLogin, setIsLogin] = useState(true);
 
   const toggleAuthMode = () => {
@@ -43,18 +45,19 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.xl,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.xl,
+      paddingBottom: theme.spacing.xl,
+    },
+  });

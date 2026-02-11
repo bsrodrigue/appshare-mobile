@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   TouchableOpacity,
   Text,
@@ -8,11 +8,11 @@ import {
   TextStyle,
   StyleProp,
 } from "react-native";
-import { theme } from "@/ui/theme";
+import { useTheme, type Theme } from "@/ui/theme";
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: "primary" | "secondary" | "outline";
+  variant?: "primary" | "secondary" | "outline" | "ghost";
   isLoading?: boolean;
   textStyle?: StyleProp<TextStyle>;
   borderRadius?: number;
@@ -27,11 +27,14 @@ export const Button = ({
   disabled,
   ...props
 }: ButtonProps) => {
+  const theme = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   const getBackgroundColor = () => {
     if (disabled) return theme.colors.disabled;
     switch (variant) {
+      case "ghost":
       case "secondary":
-        return "transparent";
       case "outline":
         return "transparent";
       default:
@@ -40,11 +43,13 @@ export const Button = ({
   };
 
   const getTextColor = () => {
+    if (disabled) return theme.colors.textLight;
     switch (variant) {
+      case "ghost":
       case "secondary":
-        return theme.colors.primary; // For "Renvoyer SMS" style links
+        return theme.colors.primary;
       case "outline":
-        return theme.colors.textWhite;
+        return theme.colors.text;
       default:
         return theme.colors.textWhite;
     }
@@ -73,22 +78,23 @@ export const Button = ({
   );
 };
 
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: theme.borderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 200,
-  },
-  outlineButton: {
-    borderWidth: 1,
-    borderColor: theme.colors.textWhite,
-  },
-  text: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.bold,
-    letterSpacing: 0.5,
-  },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    button: {
+      paddingVertical: 16,
+      paddingHorizontal: 32,
+      borderRadius: theme.borderRadius.md,
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: 200,
+    },
+    outlineButton: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    text: {
+      fontSize: theme.fontSize.base,
+      fontWeight: theme.fontWeight.bold,
+      letterSpacing: 0.5,
+    },
+  });
