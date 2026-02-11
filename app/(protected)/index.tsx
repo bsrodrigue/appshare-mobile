@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme, type Theme } from "@/ui/theme";
 import { Button } from "@/modules/shared/components/Button";
 import { useAuthStore } from "@/store/auth";
@@ -26,6 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const { user, logout } = useAuthStore();
+  const router = useRouter();
 
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -100,6 +102,12 @@ export default function HomeScreen() {
       ],
     );
   };
+  const handleProjectPress = (project: ProjectResponse) => {
+    router.push({
+      pathname: "/projects/[id]",
+      params: { id: project.id, title: project.title },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -125,6 +133,7 @@ export default function HomeScreen() {
             project={item}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onPress={handleProjectPress}
           />
         )}
         contentContainerStyle={styles.listContent}

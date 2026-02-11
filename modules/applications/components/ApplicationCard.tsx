@@ -1,43 +1,52 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme, type Theme } from "@/ui/theme";
-import { ProjectResponse } from "../types";
+import { ApplicationResponse } from "../types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-interface ProjectCardProps {
-  project: ProjectResponse;
-  onEdit: (project: ProjectResponse) => void;
+interface ApplicationCardProps {
+  application: ApplicationResponse;
+  onEdit: (application: ApplicationResponse) => void;
   onDelete: (id: string) => void;
-  onPress: (project: ProjectResponse) => void;
+  onPress?: (application: ApplicationResponse) => void;
 }
 
-export const ProjectCard = ({
-  project,
+export const ApplicationCard = ({
+  application,
   onEdit,
   onDelete,
   onPress,
-}: ProjectCardProps) => {
+}: ApplicationCardProps) => {
   const theme = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => onPress(project)}
-      activeOpacity={0.7}
+      onPress={() => onPress?.(application)}
+      disabled={!onPress}
+      activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>{project.title}</Text>
+        <View style={styles.header}>
+          <MaterialCommunityIcons
+            name="cellphone-cog"
+            size={24}
+            color={theme.colors.primary}
+            style={styles.icon}
+          />
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>{application.title}</Text>
+            <Text style={styles.packageName}>{application.package_name}</Text>
+          </View>
+        </View>
         <Text style={styles.description} numberOfLines={2}>
-          {project.description}
-        </Text>
-        <Text style={styles.date}>
-          {new Date(project.created_at).toLocaleDateString()}
+          {application.description}
         </Text>
       </View>
       <View style={styles.actions}>
         <TouchableOpacity
-          onPress={() => onEdit(project)}
+          onPress={() => onEdit(application)}
           style={styles.actionButton}
         >
           <MaterialCommunityIcons
@@ -47,7 +56,7 @@ export const ProjectCard = ({
           />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => onDelete(project.id)}
+          onPress={() => onDelete(application.id)}
           style={styles.actionButton}
         >
           <MaterialCommunityIcons
@@ -75,21 +84,31 @@ const createStyles = (theme: Theme) =>
     content: {
       flex: 1,
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: theme.spacing.sm,
+    },
+    icon: {
+      marginRight: theme.spacing.sm,
+    },
+    titleContainer: {
+      flex: 1,
+    },
     title: {
       fontSize: theme.fontSize.base,
       fontWeight: "bold",
       color: theme.colors.text,
-      marginBottom: theme.spacing.xs,
+    },
+    packageName: {
+      fontSize: theme.fontSize.xs,
+      color: theme.colors.textLight,
+      opacity: 0.7,
     },
     description: {
       fontSize: theme.fontSize.sm,
       color: theme.colors.textLight,
-      marginBottom: theme.spacing.sm,
-    },
-    date: {
-      fontSize: theme.fontSize.xs,
-      color: theme.colors.textLight,
-      opacity: 0.6,
+      lineHeight: 20,
     },
     actions: {
       flexDirection: "row",
