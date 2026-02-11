@@ -44,12 +44,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
-    [
-      "onesignal-expo-plugin",
-      {
-        mode: "development",
-      },
-    ],
+    // [
+    //   "onesignal-expo-plugin",
+    //   {
+    //     mode: "development",
+    //   },
+    // ],
     "expo-router",
     [
       "expo-splash-screen",
@@ -86,7 +86,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: "76708480-f123-4cd3-9de9-d26e83a654e6",
+      // projectId: "76708480-f123-4cd3-9de9-d26e83a654e6",
     },
     // Environment variables baked into the app at build time
     GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,

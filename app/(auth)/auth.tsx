@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/ui/theme";
 import LoginScreen from "@/modules/auth/screens/LoginScreen";
 import RegisterScreen from "@/modules/auth/screens/RegisterScreen";
-import EliteLogo from "@/modules/shared/components/EliteLogo";
+import AppLogo from "@/modules/shared/components/EliteLogo";
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -32,7 +32,7 @@ export default function AuthScreen() {
           showsVerticalScrollIndicator={false}
           bounces={true}
         >
-          <EliteLogo />
+          <AppLogo />
 
           {isLogin && <LoginScreen onToggleMode={toggleAuthMode} />}
 
