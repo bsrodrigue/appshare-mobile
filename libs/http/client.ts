@@ -70,6 +70,12 @@ export class HTTPClient {
         const reqString = `${config.method?.toUpperCase()} ${config.url}`;
         this.logger.debug(`Request: ${reqString}`);
 
+        if (config.data) {
+          this.logger.debug(
+            `Request\nBody: ${JSONService.stringify(config.data)}`,
+          );
+        }
+
         return config;
       },
       (error: AxiosError) => {
@@ -83,9 +89,11 @@ export class HTTPClient {
     // ========================================
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        this.logger.debug(
-          `Response [${response.status}] ${response.config.url}: ${JSONService.stringify(response.data)}`,
-        );
+        if (response.data) {
+          this.logger.debug(
+            `Response\nStatus: ${response.status}\nURL: ${response.config.url}\nBody: ${JSONService.stringify(response.data)}`,
+          );
+        }
         return response;
       },
       async (error: AxiosError) => {
