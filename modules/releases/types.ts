@@ -35,15 +35,6 @@ export const ReleasesListApiResponseSchema = ApiResponseSchema(
 // ============================================================================
 
 export const CreateReleaseInputSchema = z.object({
-  title: z
-    .string()
-    .min(3, "Le titre doit faire au moins 3 caractères")
-    .max(100),
-  version_code: z
-    .number()
-    .int()
-    .min(1, "Le code de version doit être au moins 1"),
-  version_name: z.string().min(1, "Le nom de version est requis"),
   release_note: z
     .string()
     .max(2000, "Les notes de version ne doivent pas dépasser 2000 caractères"),
@@ -63,10 +54,13 @@ export const UpdateReleaseInputSchema = z.object({
   title: z
     .string()
     .min(3, "Le titre doit faire au moins 3 caractères")
-    .max(100),
+    .max(100)
+    .optional(),
   release_note: z
     .string()
-    .max(2000, "Les notes de version ne doivent pas dépasser 2000 caractères"),
+    .max(2000, "Les notes de version ne doivent pas dépasser 2000 caractères")
+    .optional(),
+  environment: z.enum(["development", "staging", "production"]).optional(),
 });
 
 export type UpdateReleaseInput = z.infer<typeof UpdateReleaseInputSchema>;

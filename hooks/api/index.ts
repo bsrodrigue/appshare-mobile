@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { AxiosRequestConfig, AxiosError } from "axios";
 import { APIService } from "@/libs/api/client";
 import { ApiResponse, ErrorModel } from "@/modules/shared/types";
@@ -122,6 +122,15 @@ export function useCall<T, P>({
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Keep track of the latest callbacks to avoid re-creating execute
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
+
   const execute = useCallback(
     async (params: P) => {
       setLoading(true);
@@ -130,8 +139,8 @@ export function useCall<T, P>({
       try {
         const response = await fn(params);
         setData(response);
-        if (onSuccess) {
-          onSuccess(response);
+        if (onSuccessRef.current) {
+          onSuccessRef.current(response);
         }
         return response;
       } catch (err) {
@@ -146,8 +155,8 @@ export function useCall<T, P>({
         }
 
         setError(errorMessage);
-        if (onError) {
-          onError(errorMessage);
+        if (onErrorRef.current) {
+          onErrorRef.current(errorMessage);
         }
 
         return null;
@@ -155,7 +164,7 @@ export function useCall<T, P>({
         setLoading(false);
       }
     },
-    [fn, onSuccess, onError],
+    [fn], // Only depend on the API function
   );
 
   return {
