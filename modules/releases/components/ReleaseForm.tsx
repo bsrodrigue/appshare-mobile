@@ -20,15 +20,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as DocumentPicker from "expo-document-picker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
-  CreateReleaseInput,
-  CreateReleaseInputSchema,
+  ReleaseFormData,
+  ReleaseFormDataSchema,
   ReleaseResponse,
 } from "../types";
 
 export interface ReleaseFormProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateReleaseInput) => void;
+  onSubmit: (data: ReleaseFormData) => void;
   onFileSelected?: (file: DocumentPicker.DocumentPickerAsset) => void;
   initialData?: ReleaseResponse | null;
   isLoading?: boolean;
@@ -58,8 +58,8 @@ export const ReleaseForm = ({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateReleaseInput>({
-    resolver: zodResolver(CreateReleaseInputSchema),
+  } = useForm<ReleaseFormData>({
+    resolver: zodResolver(ReleaseFormDataSchema),
     defaultValues: {
       release_note: "",
       environment: "development",
@@ -103,7 +103,7 @@ export const ReleaseForm = ({
     }
   };
 
-  const onFormSubmit = (data: CreateReleaseInput) => {
+  const onFormSubmit = (data: ReleaseFormData) => {
     onSubmit(data);
   };
 

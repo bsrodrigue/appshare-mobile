@@ -23,16 +23,17 @@ import * as DocumentPicker from "expo-document-picker";
 
 import {
   useListReleases,
+  useCreateReleaseWithArtifact,
   useUpdateRelease,
   useDeleteRelease,
   usePromoteRelease,
 } from "@/modules/releases/hooks";
 import { ReleaseCard, ReleaseForm } from "@/modules/releases";
-import { ReleaseResponse, CreateReleaseInput } from "@/modules/releases/types";
+import { ReleaseResponse, ReleaseFormData } from "@/modules/releases/types";
 import { useGetApplication } from "@/modules/applications/hooks";
 import { ApplicationResponse } from "@/modules/applications/types";
 import { Button } from "@/modules/shared/components/Button";
-import { useArtifactUpload } from "@/modules/artifacts/hooks";
+import { useGenericUpload } from "@/modules/upload/hooks";
 
 export default function ApplicationDetailScreen() {
   const { id: appId, title: initialTitle } = useLocalSearchParams<{
@@ -52,15 +53,13 @@ export default function ApplicationDetailScreen() {
     null,
   );
 
-  // Background Upload State
-  const [backgroundReleaseId, setBackgroundReleaseId] = useState<string | null>(
-    null,
-  );
+  // Background Upload State using the NEW generic upload module
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string | null>(null);
   const {
     upload,
     isUploading: isFileUploading,
     progress: uploadProgress,
-  } = useArtifactUpload();
+  } = useGenericUpload();
   const uploadFinishedRef = useRef(false);
 
   // Fetch Application Details
@@ -88,12 +87,25 @@ export default function ApplicationDetailScreen() {
   }, [fetchData]);
 
   // Hooks for actions
+  const { callCreateReleaseWithArtifact, isLoading: isCreating } =
+    useCreateReleaseWithArtifact({
+      onSuccess: () => {
+        Toaster.success("Succès", "Release créée avec succès");
+        setIsFormVisible(false);
+        setEditingRelease(null);
+        setUploadedFileUrl(null);
+        uploadFinishedRef.current = false;
+        fetchData();
+      },
+      onError: (err) => Toaster.error("Erreur", err),
+    });
+
   const { callUpdateRelease, isLoading: isUpdating } = useUpdateRelease({
     onSuccess: () => {
-      Toaster.success("Succès", "Release enregistrée avec succès");
+      Toaster.success("Succès", "Release mise à jour");
       setIsFormVisible(false);
       setEditingRelease(null);
-      setBackgroundReleaseId(null);
+      setUploadedFileUrl(null);
       uploadFinishedRef.current = false;
       fetchData();
     },
@@ -116,19 +128,19 @@ export default function ApplicationDetailScreen() {
     onError: (err) => Toaster.error("Erreur", err),
   });
 
-  // Handle file selection - start background upload immediately using the correct endpoint
+  // Handle file selection - start the generic background upload immediately
   const handleFileSelected = async (
     file: DocumentPicker.DocumentPickerAsset,
   ) => {
     try {
       uploadFinishedRef.current = false;
+      setUploadedFileUrl(null);
 
-      // 1. Directly get upload URL and start upload
-      // Passing appId as release_id per backend's automatic creation flow
-      const result = await upload(appId, file);
+      // 1. Start the generic upload (POST /uploadFile)
+      const result = await upload(file);
 
-      if (result && result.release_id) {
-        setBackgroundReleaseId(result.release_id);
+      if (result) {
+        setUploadedFileUrl(result.file_url);
         uploadFinishedRef.current = true;
         Toaster.info(
           "Info",
@@ -136,12 +148,12 @@ export default function ApplicationDetailScreen() {
         );
       }
     } catch (err) {
-      console.error("Upload failed:", err);
-      Toaster.error("Erreur", "L'upload de l'artéfact a échoué");
+      console.error("Generic upload failed:", err);
+      Toaster.error("Erreur", "L'upload du fichier a échoué");
     }
   };
 
-  const handleSubmit = async (data: CreateReleaseInput) => {
+  const handleSubmit = async (data: ReleaseFormData) => {
     if (editingRelease) {
       // Update existing release (Edit mode)
       await callUpdateRelease({
@@ -151,8 +163,8 @@ export default function ApplicationDetailScreen() {
         },
       });
     } else {
-      // Finalize background release (Creation mode)
-      if (!backgroundReleaseId) {
+      // Create NEW release using the generic artifact URL
+      if (!uploadedFileUrl) {
         Toaster.error(
           "Erreur",
           "Veuillez attendre la fin de l'upload ou sélectionner un fichier",
@@ -160,11 +172,12 @@ export default function ApplicationDetailScreen() {
         return;
       }
 
-      await callUpdateRelease({
-        id: backgroundReleaseId,
+      await callCreateReleaseWithArtifact({
+        app_id: appId as string,
         body: {
           release_note: data.release_note,
           environment: data.environment,
+          artifact_url: uploadedFileUrl,
         },
       });
     }
@@ -284,7 +297,7 @@ export default function ApplicationDetailScreen() {
         style={styles.fab}
         onPress={() => {
           setEditingRelease(null);
-          setBackgroundReleaseId(null);
+          setUploadedFileUrl(null);
           uploadFinishedRef.current = false;
           setIsFormVisible(true);
         }}
@@ -297,13 +310,13 @@ export default function ApplicationDetailScreen() {
         onClose={() => {
           setIsFormVisible(false);
           setEditingRelease(null);
-          setBackgroundReleaseId(null);
+          setUploadedFileUrl(null);
           uploadFinishedRef.current = false;
         }}
         onFileSelected={handleFileSelected}
         onSubmit={handleSubmit}
         initialData={editingRelease}
-        isLoading={isUpdating}
+        isLoading={isCreating || isUpdating}
         isUploading={isFileUploading}
         uploadProgress={uploadProgress?.progress}
       />

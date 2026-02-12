@@ -13,8 +13,8 @@ export const ReleaseResponseSchema = z.object({
   release_note: z.string().max(2000),
   environment: z.enum(["development", "staging", "production"]),
   application_id: z.uuid(),
-  created_at: z.iso.datetime(),
-  updated_at: z.iso.datetime(),
+  created_at: z.string(),
+  updated_at: z.string(),
 });
 
 export type ReleaseResponse = z.infer<typeof ReleaseResponseSchema>;
@@ -34,11 +34,23 @@ export const ReleasesListApiResponseSchema = ApiResponseSchema(
 // Action Params
 // ============================================================================
 
-export const CreateReleaseInputSchema = z.object({
+/**
+ * Base input used by the ReleaseForm
+ */
+export const ReleaseFormDataSchema = z.object({
   release_note: z
     .string()
     .max(2000, "Les notes de version ne doivent pas dépasser 2000 caractères"),
   environment: z.enum(["development", "staging", "production"]),
+});
+
+export type ReleaseFormData = z.infer<typeof ReleaseFormDataSchema>;
+
+/**
+ * Legacy/Standard creation schema
+ */
+export const CreateReleaseInputSchema = ReleaseFormDataSchema.extend({
+  artifact_path: z.string().min(1, "Le chemin de l'artéfact est requis"),
 });
 
 export type CreateReleaseInput = z.infer<typeof CreateReleaseInputSchema>;
@@ -50,6 +62,30 @@ export const CreateReleaseParamsSchema = z.object({
 
 export type CreateReleaseParams = z.infer<typeof CreateReleaseParamsSchema>;
 
+/**
+ * Creation with pre-uploaded artifact URL
+ */
+export const CreateReleaseWithArtifactInputSchema =
+  ReleaseFormDataSchema.extend({
+    artifact_url: z.string().url("URL de l'artéfact invalide"),
+  });
+
+export type CreateReleaseWithArtifactInput = z.infer<
+  typeof CreateReleaseWithArtifactInputSchema
+>;
+
+export const CreateReleaseWithArtifactParamsSchema = z.object({
+  app_id: z.uuid(),
+  body: CreateReleaseWithArtifactInputSchema,
+});
+
+export type CreateReleaseWithArtifactParams = z.infer<
+  typeof CreateReleaseWithArtifactParamsSchema
+>;
+
+/**
+ * Update schema
+ */
 export const UpdateReleaseInputSchema = z.object({
   title: z
     .string()
@@ -61,6 +97,7 @@ export const UpdateReleaseInputSchema = z.object({
     .max(2000, "Les notes de version ne doivent pas dépasser 2000 caractères")
     .optional(),
   environment: z.enum(["development", "staging", "production"]).optional(),
+  artifact_path: z.string().optional(),
 });
 
 export type UpdateReleaseInput = z.infer<typeof UpdateReleaseInputSchema>;

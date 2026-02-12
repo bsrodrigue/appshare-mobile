@@ -8,6 +8,8 @@ import {
   ReleasesListApiResponseSchema,
   CreateReleaseParams,
   CreateReleaseParamsSchema,
+  CreateReleaseWithArtifactParams,
+  CreateReleaseWithArtifactParamsSchema,
   UpdateReleaseParams,
   UpdateReleaseParamsSchema,
   DeleteReleaseParams,
@@ -51,6 +53,26 @@ export async function createRelease(
   const apiClient = APIService.getClient();
   const response = await apiClient.post<ReleaseResponse>(
     `applications/${app_id}/releases`,
+    body,
+  );
+
+  const validatedOutput = ReleaseApiResponseSchema.safeParse(response);
+  if (!validatedOutput.success) throw new ApiOutputError(validatedOutput.error);
+
+  return validatedOutput.data.data;
+}
+
+export async function createReleaseWithArtifact(
+  params: CreateReleaseWithArtifactParams,
+): Promise<ReleaseResponse> {
+  const validatedInput =
+    CreateReleaseWithArtifactParamsSchema.safeParse(params);
+  if (!validatedInput.success) throw new ApiInputError(validatedInput.error);
+
+  const { app_id, body } = validatedInput.data;
+  const apiClient = APIService.getClient();
+  const response = await apiClient.post<ReleaseResponse>(
+    `applications/${app_id}/releases/with-artifact`,
     body,
   );
 

@@ -1,6 +1,7 @@
 import {
   listReleases,
   createRelease,
+  createReleaseWithArtifact,
   getRelease,
   updateRelease,
   deleteRelease,
@@ -9,6 +10,7 @@ import {
 import {
   ReleaseResponse,
   CreateReleaseParams,
+  CreateReleaseWithArtifactParams,
   GetReleaseParams,
   UpdateReleaseParams,
   DeleteReleaseParams,
@@ -89,6 +91,34 @@ export function useCreateRelease({
 
   return {
     callCreateRelease: execute,
+    isLoading: loading,
+  };
+}
+
+// ============================================================================
+// Create Release with Artifact
+// ============================================================================
+
+export interface UseCreateReleaseWithArtifactParams {
+  onSuccess?: (response: ReleaseResponse) => void;
+  onError?: (error: string) => void;
+}
+
+export function useCreateReleaseWithArtifact({
+  onSuccess,
+  onError,
+}: UseCreateReleaseWithArtifactParams = {}) {
+  const { execute, loading } = useCall<
+    ReleaseResponse,
+    CreateReleaseWithArtifactParams
+  >({
+    fn: createReleaseWithArtifact,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callCreateReleaseWithArtifact: execute,
     isLoading: loading,
   };
 }
