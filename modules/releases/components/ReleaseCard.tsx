@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useTheme, type Theme } from "@/ui/theme";
 import { ReleaseResponse } from "../types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ArtifactList } from "@/modules/artifacts";
 
 interface ReleaseCardProps {
   release: ReleaseResponse;
@@ -42,57 +43,68 @@ export const ReleaseCard = ({
       disabled={!onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
-      <View style={styles.content}>
-        <View style={styles.header}>
+      <View style={styles.header}>
+        <View style={styles.titleInfo}>
           <View style={[styles.envBadge, { backgroundColor: envColor }]}>
             <Text style={styles.envText}>
               {release.environment.toUpperCase()}
             </Text>
           </View>
-          <View style={styles.titleContainer}>
+          <View>
             <Text style={styles.title}>{release.title}</Text>
             <Text style={styles.version}>
               v{release.version_name} ({release.version_code})
             </Text>
           </View>
         </View>
-        <Text style={styles.releaseNote} numberOfLines={2}>
-          {release.release_note}
-        </Text>
+
+        <TouchableOpacity
+          onPress={() => {
+            const options = ["Modifier", "Supprimer"];
+
+            if (onPromote && release.environment !== "production") {
+              const nextEnv =
+                release.environment === "development"
+                  ? "staging"
+                  : "production";
+              options.push(`Promouvoir vers ${nextEnv}`);
+            }
+
+            Alert.alert("Options de la release", undefined, [
+              { text: "Modifier", onPress: () => onEdit(release) },
+              {
+                text: "Supprimer",
+                onPress: () => onDelete(release.id),
+                style: "destructive",
+              },
+              ...(onPromote && release.environment !== "production"
+                ? [
+                    {
+                      text: `Promouvoir vers ${release.environment === "development" ? "staging" : "production"}`,
+                      onPress: () => onPromote(release),
+                    },
+                  ]
+                : []),
+              { text: "Annuler", style: "cancel" },
+            ]);
+          }}
+          style={styles.menuButton}
+        >
+          <MaterialCommunityIcons
+            name="dots-vertical"
+            size={22}
+            color={theme.colors.textLight}
+          />
+        </TouchableOpacity>
       </View>
-      <View style={styles.actions}>
-        {onPromote && release.environment !== "production" && (
-          <TouchableOpacity
-            onPress={() => onPromote(release)}
-            style={styles.actionButton}
-          >
-            <MaterialCommunityIcons
-              name="rocket-launch"
-              size={20}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={() => onEdit(release)}
-          style={styles.actionButton}
-        >
-          <MaterialCommunityIcons
-            name="pencil"
-            size={20}
-            color={theme.colors.primary}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => onDelete(release.id)}
-          style={styles.actionButton}
-        >
-          <MaterialCommunityIcons
-            name="delete"
-            size={20}
-            color={theme.colors.error}
-          />
-        </TouchableOpacity>
+
+      <View style={styles.content}>
+        {release.release_note ? (
+          <Text style={styles.releaseNote} numberOfLines={3}>
+            {release.release_note}
+          </Text>
+        ) : null}
+        <ArtifactList releaseId={release.id} />
       </View>
     </TouchableOpacity>
   );
@@ -105,17 +117,19 @@ const createStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.md,
       padding: theme.spacing.md,
       marginBottom: theme.spacing.md,
-      flexDirection: "row",
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    content: {
-      flex: 1,
-    },
     header: {
       flexDirection: "row",
+      justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.md,
+    },
+    titleInfo: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      flex: 1,
     },
     envBadge: {
       paddingHorizontal: theme.spacing.sm,
@@ -129,31 +143,33 @@ const createStyles = (theme: Theme) =>
       fontWeight: "bold",
       color: "#FFFFFF",
     },
-    titleContainer: {
-      flex: 1,
-    },
     title: {
       fontSize: theme.fontSize.base,
       fontWeight: "bold",
       color: theme.colors.text,
+      marginBottom: 2,
     },
     version: {
       fontSize: theme.fontSize.xs,
       color: theme.colors.textLight,
       opacity: 0.7,
     },
+    content: {
+      gap: theme.spacing.sm,
+    },
     releaseNote: {
-      fontSize: theme.fontSize.sm,
+      fontSize: 13,
       color: theme.colors.textLight,
-      lineHeight: 20,
+      lineHeight: 18,
+      fontStyle: "italic",
     },
     actions: {
       flexDirection: "row",
       alignItems: "center",
-      paddingLeft: theme.spacing.sm,
+      marginTop: -theme.spacing.xs,
     },
-    actionButton: {
-      padding: theme.spacing.sm,
-      marginLeft: theme.spacing.xs,
+    menuButton: {
+      padding: theme.spacing.xs,
+      marginRight: -theme.spacing.sm,
     },
   });

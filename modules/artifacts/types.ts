@@ -26,18 +26,43 @@ export const UploadURLApiResponseSchema = ApiResponseSchema(
 );
 
 // ============================================================================
+// Create Artifact Schemas
+// ============================================================================
+
+export const CreateArtifactParamsSchema = z.object({
+  release_id: z.uuid(),
+  file_url: z.url(),
+  file_type: z.string(),
+  file_size: z.number().int(),
+  abi: z.string().optional(),
+  sha256: z.string(),
+});
+
+export type CreateArtifactParams = z.infer<typeof CreateArtifactParamsSchema>;
+
+// ============================================================================
 // Artifact Types (Future proofing)
 // ============================================================================
 
 export const ArtifactResponseSchema = z.object({
   id: z.uuid(),
   release_id: z.uuid(),
-  filename: z.string(),
-  file_url: z.string().url(),
-  content_type: z.string(),
-  size: z.number().int(),
+  file_url: z.url(),
+  file_type: z.string(),
+  file_size: z.number().int(),
+  abi: z.string().nullable().optional(),
+  sha256: z.string(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  deleted_at: z.iso.datetime().nullable().optional(),
 });
 
 export type ArtifactResponse = z.infer<typeof ArtifactResponseSchema>;
+
+export const ArtifactListApiResponseSchema = ApiResponseSchema(
+  z.array(ArtifactResponseSchema),
+);
+
+export const CreateArtifactApiResponseSchema = ApiResponseSchema(
+  ArtifactResponseSchema,
+);

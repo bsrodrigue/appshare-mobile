@@ -17,6 +17,7 @@ import { Toaster } from "@/libs/notification/toast";
 import {
   useListApplications,
   useCreateApplication,
+  useCreateApplicationFromBinary,
   useUpdateApplication,
   useDeleteApplication,
 } from "@/modules/applications/hooks";
@@ -25,6 +26,7 @@ import { ApplicationForm } from "@/modules/applications/components/ApplicationFo
 import {
   ApplicationResponse,
   CreateApplicationParams,
+  CreateApplicationFromBinaryParams,
 } from "@/modules/applications/types";
 import { Button } from "@/modules/shared/components/Button";
 
@@ -69,6 +71,16 @@ export default function ProjectDetailScreen() {
     },
   );
 
+  const { callCreateApplicationFromBinary, isLoading: isCreatingFromBinary } =
+    useCreateApplicationFromBinary({
+      onSuccess: () => {
+        Toaster.success("Succès", "Application créée avec succès");
+        setIsFormVisible(false);
+        fetchApplications();
+      },
+      onError: (err) => Toaster.error("Erreur", err),
+    });
+
   const { callUpdateApplication, isLoading: isUpdating } = useUpdateApplication(
     {
       onSuccess: () => {
@@ -89,15 +101,23 @@ export default function ProjectDetailScreen() {
     onError: (err) => Toaster.error("Erreur", err),
   });
 
-  const handleSubmit = (data: CreateApplicationParams) => {
+  const handleSubmit = (
+    data: CreateApplicationParams | CreateApplicationFromBinaryParams,
+  ) => {
     if (editingApp) {
+      // Only CreateApplicationParams fields can be updated
+      const updateData = data as CreateApplicationParams;
       callUpdateApplication({
         id: editingApp.id,
-        title: data.title,
-        description: data.description,
+        title: updateData.title,
+        description: updateData.description,
       });
     } else {
-      callCreateApplication(data);
+      if ("artifact_url" in data) {
+        callCreateApplicationFromBinary(data);
+      } else {
+        callCreateApplication(data);
+      }
     }
   };
 
@@ -212,7 +232,7 @@ export default function ProjectDetailScreen() {
         }}
         onSubmit={handleSubmit}
         initialData={editingApp}
-        isLoading={isCreating || isUpdating}
+        isLoading={isCreating || isUpdating || isCreatingFromBinary}
         projectId={projectId as string}
       />
     </SafeAreaView>

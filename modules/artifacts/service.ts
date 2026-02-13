@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
-import { getUploadUrl } from "./api";
-import { UploadURLResponse } from "./types";
+import { getUploadUrl, createArtifact } from "./api";
+import { ArtifactResponse } from "./types";
 import { Logger } from "@/libs/log";
 
 const logger = new Logger("ArtifactUploadService");
@@ -23,7 +23,7 @@ export class ArtifactUploadService {
     releaseId: string,
     file?: DocumentPicker.DocumentPickerAsset,
     onProgress?: (progress: UploadProgress) => void,
-  ): Promise<UploadURLResponse> {
+  ): Promise<ArtifactResponse> {
     try {
       // 1. Pick File if not provided
       let selectedFile = file;
@@ -77,7 +77,21 @@ export class ArtifactUploadService {
 
       logger.debug("File upload to R2 completed successfully");
 
-      return uploadDetails;
+      // 5. Register Artifact Metadata in DB
+      logger.debug("Registering artifact metadata in DB...");
+      const artifact = await createArtifact({
+        release_id: releaseId,
+        file_url: uploadDetails.file_url,
+        file_type:
+          selectedFile.mimeType || "application/vnd.android.package-archive",
+        file_size: selectedFile.size || blob.size,
+        sha256: "0".repeat(64), // Placeholder as crypto is not available in current deps
+        abi: "universal",
+      });
+
+      logger.debug("Artifact metadata registered successfully");
+
+      return artifact;
     } catch (error: any) {
       logger.error("Artifact upload failed", error);
       throw error;

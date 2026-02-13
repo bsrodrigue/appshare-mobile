@@ -1,6 +1,12 @@
 import { useState, useCallback } from "react";
 import { ArtifactUploadService, UploadProgress } from "./service";
-import { UploadURLResponse } from "./types";
+import { listArtifacts, createArtifact } from "./api";
+import {
+  UploadURLResponse,
+  ArtifactResponse,
+  CreateArtifactParams,
+} from "./types";
+import { useCall } from "@/hooks/api";
 import * as DocumentPicker from "expo-document-picker";
 
 export function useArtifactUpload() {
@@ -40,5 +46,47 @@ export function useArtifactUpload() {
     isUploading,
     progress,
     error,
+  };
+}
+
+export interface UseListArtifactsParams {
+  onSuccess?: (response: ArtifactResponse[]) => void;
+  onError?: (error: string) => void;
+}
+
+export function useListArtifacts({
+  onSuccess,
+  onError,
+}: UseListArtifactsParams = {}) {
+  const { execute, loading } = useCall<ArtifactResponse[], string>({
+    fn: listArtifacts,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callListArtifacts: execute,
+    isLoading: loading,
+  };
+}
+
+export interface UseCreateArtifactParams {
+  onSuccess?: (response: ArtifactResponse) => void;
+  onError?: (error: string) => void;
+}
+
+export function useCreateArtifact({
+  onSuccess,
+  onError,
+}: UseCreateArtifactParams = {}) {
+  const { execute, loading } = useCall<ArtifactResponse, CreateArtifactParams>({
+    fn: createArtifact,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callCreateArtifact: execute,
+    isLoading: loading,
   };
 }

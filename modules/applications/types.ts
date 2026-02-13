@@ -51,6 +51,19 @@ export type CreateApplicationParams = z.infer<
   typeof CreateApplicationParamsSchema
 >;
 
+export const CreateApplicationFromBinaryParamsSchema = z.object({
+  project_id: z.uuid(),
+  title: z
+    .string()
+    .min(3, "Le titre doit faire au moins 3 caractères")
+    .max(100),
+  artifact_url: z.url("L'URL de l'artifact n'est pas valide"),
+});
+
+export type CreateApplicationFromBinaryParams = z.infer<
+  typeof CreateApplicationFromBinaryParamsSchema
+>;
+
 export const UpdateApplicationParamsSchema = z.object({
   id: z.uuid(),
   title: z

@@ -8,6 +8,8 @@ import {
   ApplicationsListApiResponseSchema,
   CreateApplicationParams,
   CreateApplicationParamsSchema,
+  CreateApplicationFromBinaryParams,
+  CreateApplicationFromBinaryParamsSchema,
   UpdateApplicationParams,
   UpdateApplicationParamsSchema,
   DeleteApplicationParams,
@@ -50,6 +52,25 @@ export async function createApplication(
   const response = await apiClient.post<ApplicationResponse>(
     `projects/${project_id}/applications`,
     body,
+  );
+
+  const validatedOutput = ApplicationApiResponseSchema.safeParse(response);
+  if (!validatedOutput.success) throw new ApiOutputError(validatedOutput.error);
+
+  return validatedOutput.data.data;
+}
+
+export async function createApplicationFromBinary(
+  params: CreateApplicationFromBinaryParams,
+): Promise<ApplicationResponse> {
+  const validatedInput =
+    CreateApplicationFromBinaryParamsSchema.safeParse(params);
+  if (!validatedInput.success) throw new ApiInputError(validatedInput.error);
+
+  const apiClient = APIService.getClient();
+  const response = await apiClient.post<ApplicationResponse>(
+    "create-application-from-binary",
+    validatedInput.data,
   );
 
   const validatedOutput = ApplicationApiResponseSchema.safeParse(response);

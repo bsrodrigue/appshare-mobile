@@ -1,6 +1,7 @@
 import {
   listApplications,
   createApplication,
+  createApplicationFromBinary,
   getApplication,
   updateApplication,
   deleteApplication,
@@ -8,6 +9,7 @@ import {
 import {
   ApplicationResponse,
   CreateApplicationParams,
+  CreateApplicationFromBinaryParams,
   GetApplicationParams,
   UpdateApplicationParams,
   DeleteApplicationParams,
@@ -96,6 +98,34 @@ export function useCreateApplication({
 
   return {
     callCreateApplication: execute,
+    isLoading: loading,
+  };
+}
+
+// ============================================================================
+// Create Application From Binary
+// ============================================================================
+
+export interface UseCreateApplicationFromBinaryParams {
+  onSuccess?: (response: ApplicationResponse) => void;
+  onError?: (error: string) => void;
+}
+
+export function useCreateApplicationFromBinary({
+  onSuccess,
+  onError,
+}: UseCreateApplicationFromBinaryParams = {}) {
+  const { execute, loading } = useCall<
+    ApplicationResponse,
+    CreateApplicationFromBinaryParams
+  >({
+    fn: createApplicationFromBinary,
+    onSuccess,
+    onError,
+  });
+
+  return {
+    callCreateApplicationFromBinary: execute,
     isLoading: loading,
   };
 }
